@@ -1,0 +1,4467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGWICUS (BD) LIMITED — Mechanics Inventory Register</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --graphite-900:#181B1E;
+  --graphite-800:#22262A;
+  --graphite-700:#2C3136;
+  --graphite-600:#3A4046;
+  --steel-100:#ECE8DE;
+  --steel-200:#DCD6C7;
+  --steel-300:#C7BFAC;
+  --plate:#F4F1E8;
+  --amber-400:#EBAE49;
+  --amber-500:#DE9A2E;
+  --amber-600:#B87C1C;
+  --rust-600:#B5452F;
+  --rust-700:#8F3423;
+  --moss-500:#5C7A52;
+  --moss-600:#476140;
+  --ink:#15181A;
+  --ink-soft:#4B5157;
+  --line:#C7BFAC;
+
+  --f-display:"Arial Narrow","Helvetica Neue Condensed","Roboto Condensed",sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --f-mono:ui-monospace,"SF Mono","Roboto Mono","Cascadia Mono",Consolas,monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--f-body);
+  background:var(--graphite-900);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;}
+input,select{font-family:inherit;}
+::selection{background:var(--amber-400);color:var(--ink);}
+:focus-visible{outline:3px solid var(--amber-400);outline-offset:2px;}
+
+.hidden{display:none !important;}
+
+/* ============================================================
+   SHARED — riveted panel texture
+   ============================================================ */
+.rivet{
+  position:absolute;width:8px;height:8px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #8b8f93, #3a3d40 65%, #222 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 1px 2px rgba(0,0,0,.6);
+}
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#screen-login{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.035), transparent 40%),
+    repeating-linear-gradient(135deg, rgba(255,255,255,.015) 0 2px, transparent 2px 26px),
+    var(--graphite-900);
+  padding:32px 20px;
+}
+.login-wrap{width:100%;max-width:560px;}
+
+.plate{
+  position:relative;
+  background:linear-gradient(180deg, var(--graphite-700), var(--graphite-800));
+  border:1px solid #000;
+  border-radius:6px;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06) inset;
+  padding:38px 34px 30px;
+}
+.plate .rivet:nth-child(1){top:14px;left:14px;}
+.plate .rivet:nth-child(2){top:14px;right:14px;}
+.plate .rivet:nth-child(3){bottom:14px;left:14px;}
+.plate .rivet:nth-child(4){bottom:14px;right:14px;}
+
+.brand-eyebrow{
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.24em;
+  color:var(--amber-400);
+  text-transform:uppercase;
+  text-align:center;
+  margin:0 0 6px;
+}
+.brand-name{
+  font-family:var(--f-display);
+  font-weight:800;
+  font-stretch:condensed;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  font-size:clamp(28px,6vw,40px);
+  color:var(--steel-100);
+  text-align:center;
+  margin:0;
+  line-height:1.05;
+}
+.brand-sub{
+  font-family:var(--f-mono);
+  font-size:12px;
+  color:#9AA0A6;
+  text-align:center;
+  letter-spacing:.1em;
+  margin:6px 0 26px;
+  text-transform:uppercase;
+}
+.brand-sub::before,.brand-sub::after{content:"— ";}
+.brand-sub::after{content:" —";}
+
+.mode-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:12px;
+  margin-top:6px;
+}
+@media (max-width:520px){.mode-grid{grid-template-columns:1fr;}}
+
+.mode-btn{
+  position:relative;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  background:linear-gradient(180deg,#3a4046,#2c3136);
+  border:1px solid #101315;
+  border-radius:5px;
+  padding:20px 10px 16px;
+  text-align:center;
+  color:var(--steel-100);
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+  box-shadow:0 3px 0 #0d0f10, 0 8px 16px rgba(0,0,0,.35);
+}
+.mode-btn:hover{transform:translateY(-2px);}
+.mode-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #0d0f10;}
+.mode-btn .dot{
+  width:14px;height:14px;border-radius:50%;margin:0 auto 10px;
+  box-shadow:0 0 0 3px rgba(0,0,0,.4) inset, 0 1px 2px rgba(0,0,0,.5);
+}
+.mode-btn.user .dot{background:radial-gradient(circle at 35% 30%,#7FA070,var(--moss-600));}
+.mode-btn.checker .dot{background:radial-gradient(circle at 35% 30%,#F2C36B,var(--amber-600));}
+.mode-btn.admin .dot{background:radial-gradient(circle at 35% 30%,#D9695A,var(--rust-700));}
+.mode-btn .mode-label{
+  font-family:var(--f-display);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-size:15px;
+}
+.mode-btn .mode-tag{
+  display:block;
+  font-family:var(--f-mono);
+  font-size:10px;
+  letter-spacing:.08em;
+  color:#9AA0A6;
+  margin-top:4px;
+  text-transform:uppercase;
+}
+.mode-btn.selected{
+  background:linear-gradient(180deg,#4a4137,#3d3527);
+  border-color:var(--amber-500);
+  box-shadow:0 3px 0 #7a5a15, 0 8px 18px rgba(222,154,46,.25);
+}
+
+.lock-icon{font-size:11px;position:absolute;top:8px;right:10px;opacity:.6;}
+
+.password-panel{
+  margin-top:18px;
+  max-height:0;
+  overflow:hidden;
+  transition:max-height .25s ease;
+}
+.password-panel.open{max-height:200px;}
+.password-inner{
+  background:rgba(0,0,0,.25);
+  border:1px dashed #4a4f54;
+  border-radius:5px;
+  padding:16px;
+}
+.field-label{
+  font-family:var(--f-mono);
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#9AA0A6;
+  display:block;
+  margin-bottom:6px;
+}
+.pw-row{display:flex;gap:8px;}
+.pw-row input{
+  flex:1;
+  background:var(--graphite-900);
+  border:1px solid #000;
+  border-radius:4px;
+  color:var(--steel-100);
+  padding:10px 12px;
+  font-family:var(--f-mono);
+  font-size:14px;
+  letter-spacing:.08em;
+}
+.pw-row input::placeholder{color:#565c62;}
+.error-text{
+  color:var(--rust-600);
+  font-family:var(--f-mono);
+  font-size:11px;
+  margin-top:8px;
+  display:none;
+}
+.error-text.show{display:block;}
+.hint-text{
+  color:#7d8388;
+  font-family:var(--f-mono);
+  font-size:10.5px;
+  margin-top:8px;
+}
+
+.btn-primary{
+  background:linear-gradient(180deg,var(--amber-400),var(--amber-600));
+  border:1px solid #7a5a15;
+  color:#241a06;
+  font-family:var(--f-display);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-size:13px;
+  padding:11px 18px;
+  border-radius:4px;
+  box-shadow:0 2px 0 #6b4e10;
+}
+.btn-primary:active{transform:translateY(1px);box-shadow:none;}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;}
+
+.enter-row{display:flex;justify-content:flex-end;margin-top:28px;}
+
+.footer-strip{
+  text-align:center;
+  margin-top:18px;
+  font-family:var(--f-mono);
+  font-size:10px;
+  letter-spacing:.1em;
+  color:#565c62;
+  text-transform:uppercase;
+}
+
+/* ============================================================
+   DASHBOARD SHELL
+   ============================================================ */
+#screen-dashboard{
+  display:flex;
+  min-height:100vh;
+  background:var(--steel-100);
+}
+.sidebar{
+  width:230px;
+  flex-shrink:0;
+  background:linear-gradient(180deg,var(--graphite-800),var(--graphite-900));
+  color:var(--steel-100);
+  position:relative;
+  padding:22px 0 16px;
+}
+.sidebar .rivet:nth-child(1){top:12px;left:12px;}
+.sidebar .rivet:nth-child(2){top:12px;right:12px;}
+.side-brand{
+  padding:0 18px 18px;
+  border-bottom:1px solid var(--graphite-600);
+  margin-bottom:14px;
+}
+.side-brand .name{
+  font-family:var(--f-display);
+  font-weight:800;
+  text-transform:uppercase;
+  font-size:18px;
+  letter-spacing:.02em;
+  line-height:1.1;
+}
+.side-brand .dept{
+  font-family:var(--f-mono);
+  font-size:10px;
+  color:var(--amber-400);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  margin-top:6px;
+}
+.side-role{
+  padding:0 18px 18px;
+  font-family:var(--f-mono);
+  font-size:10.5px;
+  color:#9AA0A6;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.side-role b{color:var(--steel-100);display:block;font-size:12px;letter-spacing:.03em;margin-top:2px;}
+
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 18px;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  font-size:13px;
+  color:#C9CDD1;
+  border-left:3px solid transparent;
+  cursor:pointer;
+}
+.nav-item .ni-icon{width:16px;text-align:center;font-size:13px;opacity:.85;}
+.nav-item.active{
+  background:rgba(222,154,46,.1);
+  border-left-color:var(--amber-500);
+  color:var(--steel-100);
+  font-weight:600;
+}
+.nav-item.disabled{
+  color:#585d61;
+  cursor:not-allowed;
+}
+.nav-item .soon{
+  margin-left:auto;
+  font-family:var(--f-mono);
+  font-size:8.5px;
+  background:var(--graphite-600);
+  color:#9AA0A6;
+  padding:2px 5px;
+  border-radius:3px;
+  letter-spacing:.05em;
+}
+
+.sidebar-footer{
+  margin-top:20px;
+  padding:14px 18px 0;
+  border-top:1px solid var(--graphite-600);
+}
+.logout-btn{
+  background:none;border:1px solid var(--graphite-600);color:#C9CDD1;
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;
+  padding:8px 12px;border-radius:4px;width:100%;text-transform:uppercase;
+}
+.logout-btn:hover{border-color:var(--rust-600);color:var(--rust-600);}
+
+.main{
+  flex:1;
+  padding:26px 32px 60px;
+  min-width:0;
+}
+.topbar{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-bottom:22px;
+}
+.topbar .eyebrow{
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.topbar h1{
+  font-family:var(--f-display);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  font-size:28px;
+  margin:2px 0 0;
+  color:var(--ink);
+}
+.stat-strip{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-chip{
+  background:var(--plate);
+  border:1px solid var(--line);
+  border-radius:5px;
+  padding:8px 14px;
+  text-align:center;
+  min-width:86px;
+}
+.stat-chip .num{font-family:var(--f-mono);font-weight:700;font-size:18px;color:var(--ink);}
+.stat-chip .lbl{font-family:var(--f-mono);font-size:9px;letter-spacing:.08em;color:var(--ink-soft);text-transform:uppercase;}
+
+/* placeholder for user/checker */
+.placeholder-card{
+  background:var(--plate);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:48px 30px;
+  text-align:center;
+  max-width:560px;
+}
+.placeholder-card .pi{font-size:34px;margin-bottom:10px;}
+.placeholder-card h2{
+  font-family:var(--f-display);font-weight:800;text-transform:uppercase;
+  letter-spacing:.02em;font-size:20px;margin:0 0 8px;
+}
+.placeholder-card p{color:var(--ink-soft);font-size:13.5px;line-height:1.6;margin:0 0 4px;}
+.roadmap-list{
+  text-align:left;margin-top:18px;padding:14px 16px;background:rgba(0,0,0,.03);
+  border:1px dashed var(--line);border-radius:5px;
+}
+.roadmap-list li{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+
+/* ============================================================
+   TOOLBAR + TABLE
+   ============================================================ */
+.toolbar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  margin-bottom:16px;
+}
+.search-box{
+  position:relative;flex:1;min-width:200px;max-width:320px;
+}
+.search-box input{
+  width:100%;padding:9px 12px 9px 30px;border:1px solid var(--line);border-radius:5px;
+  background:#fff;font-size:13px;
+}
+.search-box::before{
+  content:"⌕";position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--ink-soft);font-size:14px;
+}
+.btn{
+  border:1px solid var(--graphite-800);
+  background:var(--graphite-800);
+  color:var(--steel-100);
+  padding:9px 15px;
+  border-radius:5px;
+  font-size:12.5px;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  font-weight:600;
+  letter-spacing:.02em;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover{background:var(--graphite-700);}
+.btn.amber{background:linear-gradient(180deg,var(--amber-400),var(--amber-600));border-color:#7a5a15;color:#241a06;}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line);}
+.btn.ghost:hover{background:var(--steel-200);}
+.spacer{flex:1;}
+
+.table-wrap{
+  background:var(--plate);
+  border:1px solid var(--line);
+  border-radius:6px;
+  overflow:hidden;
+}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{
+  background:var(--graphite-800);
+  color:var(--steel-100);
+  text-align:left;
+  padding:10px 12px;
+  font-family:var(--f-mono);
+  font-size:10px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+tbody td{
+  padding:9px 12px;
+  border-bottom:1px solid var(--steel-200);
+  color:var(--ink);
+  vertical-align:middle;
+  white-space:nowrap;
+}
+tbody tr:hover{background:rgba(222,154,46,.06);}
+.sl-cell{font-family:var(--f-mono);color:var(--ink-soft);}
+.trace-cell{font-family:var(--f-mono);font-weight:600;letter-spacing:.02em;}
+.status-select{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  padding:5px 8px;border-radius:4px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  cursor:pointer;
+}
+.status-select.active{background:rgba(92,122,82,.13);color:var(--moss-600);border-color:rgba(92,122,82,.4);}
+.status-select.inactive{background:rgba(181,69,47,.1);color:var(--rust-700);border-color:rgba(181,69,47,.35);}
+.remarks-input{
+  width:160px;max-width:100%;padding:6px 8px;border:1px solid transparent;border-radius:4px;
+  background:transparent;font-size:12.5px;color:var(--ink);white-space:normal;
+}
+.remarks-input:hover{border-color:var(--line);background:#fff;}
+.remarks-input:focus{border-color:var(--amber-500);background:#fff;}
+.remarks-input::placeholder{color:#A9A398;}
+.row-actions{display:flex;gap:6px;}
+.icon-btn{
+  border:1px solid var(--line);background:#fff;border-radius:4px;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--ink-soft);
+}
+.icon-btn:hover{border-color:var(--amber-500);color:var(--amber-600);}
+.icon-btn.danger:hover{border-color:var(--rust-600);color:var(--rust-600);background:rgba(181,69,47,.06);}
+.empty-row td{text-align:center;padding:40px 12px;color:var(--ink-soft);font-family:var(--f-mono);font-size:12px;}
+.table-note{
+  font-family:var(--f-mono);font-size:10.5px;color:var(--ink-soft);
+  margin:12px 2px 0;line-height:1.6;max-width:760px;
+}
+.qty-cell{font-family:var(--f-mono);font-weight:600;text-align:right;}
+.qty-purchase{color:var(--ink);}
+.qty-handover-input{
+  width:74px;padding:5px 7px;border:1px solid transparent;border-radius:4px;
+  background:transparent;font-family:var(--f-mono);font-size:12.5px;font-weight:600;
+  text-align:right;color:var(--ink);
+}
+.qty-handover-input:hover{border-color:var(--line);background:#fff;}
+.qty-handover-input:focus{border-color:var(--amber-500);background:#fff;}
+.qty-balance{font-family:var(--f-mono);font-weight:700;text-align:right;}
+.qty-balance.low{color:var(--rust-700);}
+.qty-balance.ok{color:var(--moss-600);}
+.qty-balance.neg{color:var(--rust-600);}
+.ref-cell{font-family:var(--f-mono);font-weight:600;color:var(--ink-soft);}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15,17,19,.72);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+  padding:20px;
+}
+.modal{
+  background:var(--plate);border-radius:7px;max-width:560px;width:100%;
+  max-height:88vh;overflow-y:auto;
+  box-shadow:0 30px 70px rgba(0,0,0,.5);
+}
+.modal-head{
+  background:var(--graphite-800);color:var(--steel-100);
+  padding:16px 20px;display:flex;justify-content:space-between;align-items:center;
+}
+.modal-head h3{
+  font-family:var(--f-display);font-weight:800;text-transform:uppercase;
+  letter-spacing:.02em;font-size:16px;margin:0;
+}
+.modal-close{background:none;border:none;color:#9AA0A6;font-size:20px;line-height:1;}
+.modal-close:hover{color:var(--steel-100);}
+.modal-body{padding:22px 20px;}
+
+.tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line);}
+.tab-btn{
+  background:none;border:none;padding:9px 14px;font-size:12.5px;font-weight:600;
+  color:var(--ink-soft);border-bottom:2px solid transparent;
+}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--amber-500);}
+.rqr-tab-btn{
+  background:none;border:none;padding:9px 14px;font-size:12.5px;font-weight:600;
+  color:var(--ink-soft);border-bottom:2px solid transparent;cursor:pointer;
+}
+.rqr-tab-btn.active{color:var(--ink);border-bottom-color:var(--amber-500);}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
+.form-grid .full{grid-column:1/-1;}
+.form-field label{
+  display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+}
+.form-field input,.form-field select{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;
+  font-size:13px;background:#fff;color:var(--ink);
+}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+
+.upload-zone{
+  border:2px dashed var(--line);border-radius:6px;padding:30px 18px;text-align:center;
+  background:rgba(0,0,0,.02);
+}
+.upload-zone .ui{font-size:26px;margin-bottom:8px;}
+.upload-zone p{margin:0 0 4px;font-size:12.5px;color:var(--ink-soft);}
+.upload-zone .req{font-family:var(--f-mono);font-size:10px;color:#8a8f7c;margin-top:10px;line-height:1.7;}
+.file-input-label{
+  display:inline-block;margin-top:12px;
+}
+#excel-file{display:none;}
+.upload-status{margin-top:14px;font-family:var(--f-mono);font-size:11.5px;}
+.upload-status.ok{color:var(--moss-600);}
+.upload-status.err{color:var(--rust-600);}
+
+.hist-filter{
+  display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:12px;align-items:end;
+  padding-bottom:16px;border-bottom:1px solid var(--line);
+}
+@media(max-width:560px){.hist-filter{grid-template-columns:1fr 1fr;}}
+.hist-summary{
+  margin-top:14px;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-soft);
+  background:rgba(0,0,0,.03);border:1px dashed var(--line);border-radius:5px;padding:9px 12px;
+}
+.hist-summary b{color:var(--ink);}
+.hist-del{
+  border:1px solid var(--line);background:#fff;border-radius:4px;color:var(--rust-600);
+  width:24px;height:24px;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+.hist-del:hover{border-color:var(--rust-600);background:rgba(181,69,47,.06);}
+.icon-btn.hist{font-size:12px;}
+
+/* QR modal specific — the "parts tag" signature */
+.qr-tag{
+  position:relative;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:26px 22px 20px;
+  margin:0 auto;
+  max-width:300px;
+  text-align:center;
+  border-top:none;
+}
+.qr-tag::before{
+  content:"";
+  position:absolute;
+  top:-1px;left:0;right:0;height:14px;
+  background-image:radial-gradient(circle 5px, var(--graphite-900) 5px, transparent 5.5px);
+  background-size:20px 20px;
+  background-position:10px -8px;
+  background-repeat:repeat-x;
+}
+.qr-eyelet{
+  width:16px;height:16px;border-radius:50%;
+  border:3px solid var(--steel-300);
+  background:var(--graphite-900);
+  margin:0 auto 12px;
+}
+.qr-canvas-holder{display:flex;justify-content:center;margin:6px 0 14px;}
+.qr-canvas-holder img,.qr-canvas-holder canvas{image-rendering:pixelated;}
+.qr-trace{
+  font-family:var(--f-mono);font-weight:700;font-size:17px;letter-spacing:.05em;
+  color:var(--ink);
+}
+.qr-companyline{
+  font-family:var(--f-display);font-weight:800;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);margin-top:12px;
+  border-top:1px dashed var(--line);padding-top:8px;
+}
+
+/* Print jobs (single tag / master sheet) are generated as standalone
+   documents in a new window — see generateQrDataUrl() / print handlers.
+   No in-page print CSS needed. */
+
+/* ============================================================
+   REQUISITION
+   ============================================================ */
+.req-step{
+  background:var(--plate);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:20px 22px;
+  margin-bottom:18px;
+  max-width:960px;
+}
+.req-step-head{
+  font-family:var(--f-display);font-weight:800;text-transform:uppercase;
+  letter-spacing:.02em;font-size:16px;color:var(--ink);
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.req-step-no{
+  width:24px;height:24px;border-radius:50%;background:var(--graphite-800);color:var(--amber-400);
+  display:inline-flex;align-items:center;justify-content:center;font-family:var(--f-mono);
+  font-size:12px;font-weight:700;
+}
+.req-hint{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);line-height:1.6;margin:0 0 10px;}
+.req-lookup{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.req-lookup .search-box input{background:#fff;}
+
+.machine-confirm{
+  margin-top:18px;border:1px solid var(--moss-500);border-radius:6px;overflow:hidden;
+}
+.mc-head{
+  background:rgba(92,122,82,.12);padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.mc-badge{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--moss-600);text-transform:uppercase;font-weight:600;}
+.mc-change{padding:5px 12px;font-size:11px;}
+.mc-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 18px;
+  padding:16px 14px;background:#fff;
+}
+.mc-field .k{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px;}
+.mc-field .v{font-family:var(--f-mono);font-size:13px;font-weight:600;color:var(--ink);}
+.mc-field .v.status-active{color:var(--moss-600);}
+.mc-field .v.status-inactive{color:var(--rust-700);}
+
+#req-parts-table td{white-space:normal;}
+.req-item-select,.req-return-select,.req-by-select{
+  width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;font-size:12.5px;color:var(--ink);
+}
+.req-qty-input,.req-reason-input{
+  width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;font-size:12.5px;color:var(--ink);
+}
+.req-qty-input{font-family:var(--f-mono);text-align:right;max-width:90px;}
+.req-row-del{
+  border:1px solid var(--line);background:#fff;border-radius:4px;color:var(--rust-600);
+  width:26px;height:26px;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+.req-row-del:hover{border-color:var(--rust-600);background:rgba(181,69,47,.06);}
+.req-add-row{margin-top:12px;}
+.req-submit-bar{
+  display:flex;align-items:center;justify-content:flex-end;gap:16px;flex-wrap:wrap;
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
+}
+.req-submit-note{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);margin-right:auto;}
+
+.req-add-name{display:flex;gap:10px;margin-bottom:18px;max-width:560px;}
+.req-add-name input{flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:4px;font-size:13px;background:#fff;}
+.requester-del{
+  border:1px solid var(--line);background:#fff;border-radius:4px;color:var(--rust-600);
+  width:26px;height:26px;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+.requester-del:hover{border-color:var(--rust-600);background:rgba(181,69,47,.06);}
+
+.req-filter-tabs{display:flex;gap:6px;}
+.chip-tab{
+  border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:20px;
+  padding:6px 14px;font-size:12px;font-weight:600;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.chip-tab.active{background:var(--graphite-800);color:var(--steel-100);border-color:var(--graphite-800);}
+.req-card{
+  background:var(--plate);border:1px solid var(--line);border-radius:6px;
+  margin-bottom:14px;overflow:hidden;max-width:960px;
+}
+.req-card-head{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 16px;background:#fff;border-bottom:1px solid var(--line);
+}
+.req-no{font-family:var(--f-mono);font-weight:700;font-size:13px;color:var(--ink);}
+.req-meta{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);}
+.req-status{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;font-weight:600;margin-left:auto;
+}
+.req-status.pending{background:rgba(222,154,46,.15);color:var(--amber-600);border:1px solid rgba(222,154,46,.4);}
+.req-status.approved{background:rgba(92,122,82,.15);color:var(--moss-600);border:1px solid rgba(92,122,82,.4);}
+.req-status.rejected,.req-status.checkerrejected,.req-status.denied{background:rgba(181,69,47,.12);color:var(--rust-700);border:1px solid rgba(181,69,47,.35);}
+.req-status.checkerapproved{background:rgba(56,110,150,.14);color:#2E6B8F;border:1px solid rgba(56,110,150,.4);}
+.req-status.onhold{background:rgba(120,120,120,.14);color:#5c5c5c;border:1px solid rgba(120,120,120,.4);}
+.req-card-body{padding:14px 16px;}
+.req-machine-line{font-family:var(--f-mono);font-size:12px;color:var(--ink);margin-bottom:12px;}
+.req-card-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
+.btn.moss{background:var(--moss-600);border-color:var(--moss-600);color:#fff;}
+.btn.moss:hover{background:var(--moss-500);}
+.btn.rust{background:#fff;border-color:var(--rust-600);color:var(--rust-600);}
+.btn.rust:hover{background:rgba(181,69,47,.06);}
+.btn.slate{background:#fff;border-color:#8a8f95;color:#5c5c5c;}
+.btn.slate:hover{background:rgba(120,120,120,.08);}
+.empty-note{
+  font-family:var(--f-mono);font-size:12px;color:var(--ink-soft);
+  padding:30px;text-align:center;background:var(--plate);border:1px dashed var(--line);border-radius:6px;max-width:960px;
+}
+
+/* review comment trail + inline decision box */
+.req-note-trail{margin:0 0 12px;display:flex;flex-direction:column;gap:8px;}
+.req-note{
+  background:rgba(0,0,0,.03);border:1px dashed var(--line);border-radius:5px;
+  padding:9px 12px;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-soft);line-height:1.6;
+}
+.req-note b{color:var(--ink);}
+.req-decision-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
+.req-decision-box label{
+  display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;
+}
+.req-decision-box textarea{
+  width:100%;min-height:56px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;
+  font-size:12.5px;font-family:inherit;color:var(--ink);resize:vertical;background:#fff;
+}
+
+/* ============================================================
+   MACHINE HISTORY (breakdown frequency analysis)
+   ============================================================ */
+.mh-card{
+  background:var(--plate);border:1px solid var(--line);border-radius:6px;
+  margin-bottom:12px;overflow:hidden;max-width:960px;
+}
+.mh-head{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 16px;
+  background:#fff;border-bottom:1px solid var(--line);cursor:pointer;
+}
+.mh-trace{font-family:var(--f-mono);font-weight:700;font-size:13px;color:var(--ink);}
+.mh-meta{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);}
+.mh-count{
+  margin-left:auto;font-family:var(--f-mono);font-size:11px;font-weight:700;
+  padding:4px 10px;border-radius:20px;background:rgba(181,69,47,.10);color:var(--rust-700);border:1px solid rgba(181,69,47,.3);
+}
+.mh-count.low{background:rgba(92,122,82,.12);color:var(--moss-600);border-color:rgba(92,122,82,.35);}
+.mh-count.mid{background:rgba(222,154,46,.15);color:var(--amber-600);border-color:rgba(222,154,46,.4);}
+.mh-bar-track{height:6px;background:var(--steel-200);border-radius:3px;overflow:hidden;flex:1 1 100%;min-width:120px;}
+.mh-bar-fill{height:100%;background:linear-gradient(90deg,var(--amber-500),var(--rust-600));}
+.mh-body{padding:0 16px 14px;display:none;}
+.mh-body.open{display:block;}
+.mh-body table{font-size:12px;}
+.mh-empty-cell{color:var(--ink-soft);}
+
+/* ============================================================
+   REPORTS (side panel)
+   ============================================================ */
+.nav-section-label{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);padding:16px 14px 6px;
+}
+.rep-toolbar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;max-width:960px;
+}
+.rep-select{
+  padding:8px 10px;border:1px solid var(--line);border-radius:5px;background:#fff;
+  font-family:var(--f-mono);font-size:12px;color:var(--ink);min-width:180px;
+}
+.rep-group-head{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-soft);background:var(--plate);border:1px solid var(--line);border-bottom:none;
+  padding:8px 14px;margin-top:14px;border-radius:6px 6px 0 0;
+}
+.rep-group-head:first-child{margin-top:0;}
+.svc-badge{
+  font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:20px;
+  background:rgba(56,110,150,.12);color:#2E6B8F;border:1px solid rgba(56,110,150,.35);white-space:nowrap;
+}
+.rqr-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;max-width:960px;
+}
+.rqr-cell{
+  background:#fff;border:1px solid var(--line);border-radius:6px;
+  padding:12px 8px 10px;text-align:center;
+}
+.rqr-cell img{image-rendering:pixelated;margin-bottom:8px;}
+.rqr-cell .rqr-trace{font-family:var(--f-mono);font-weight:700;font-size:11px;color:var(--ink);word-break:break-all;}
+.rqr-search-results{max-width:480px;margin-bottom:16px;}
+.rqr-result-item{
+  display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:9px 12px;border:1px solid var(--line);border-top:none;background:#fff;
+  cursor:pointer;font-family:var(--f-mono);font-size:12px;
+}
+.rqr-result-item:first-child{border-top:1px solid var(--line);border-radius:5px 5px 0 0;}
+.rqr-result-item:last-child{border-radius:0 0 5px 5px;}
+.rqr-result-item:hover{background:var(--plate);}
+.rqr-result-item .t{font-weight:700;color:var(--ink);}
+.rqr-result-item .m{color:var(--ink-soft);}
+
+/* toast */
+#toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--graphite-900);color:var(--steel-100);
+  padding:11px 20px;border-radius:6px;font-size:12.5px;font-family:var(--f-mono);
+  border:1px solid var(--amber-500);opacity:0;pointer-events:none;
+  transition:all .25s ease;z-index:200;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ============================================================
+   MOBILE TOPBAR + SIDEBAR DRAWER
+   Hidden on desktop; the sidebar becomes an off-canvas drawer
+   below the --mobile-bp breakpoint.
+   ============================================================ */
+.mobile-topbar{
+  display:none;
+  position:sticky;top:0;left:0;right:0;z-index:60;
+  align-items:center;gap:12px;
+  background:linear-gradient(180deg,var(--graphite-800),var(--graphite-900));
+  color:var(--steel-100);padding:12px 16px;
+  border-bottom:1px solid var(--graphite-600);
+}
+.hamburger-btn{
+  background:none;border:1px solid var(--graphite-600);color:var(--steel-100);
+  width:36px;height:36px;border-radius:6px;font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+}
+.mobile-topbar .mt-title{
+  font-family:var(--f-display);font-weight:800;font-size:13px;letter-spacing:.04em;
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mobile-topbar .mt-role{
+  margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--steel-300);white-space:nowrap;
+}
+#sidebar-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(10,11,12,.55);z-index:55;
+}
+#sidebar-backdrop.show{display:block;}
+
+@media (max-width: 860px){
+  .mobile-topbar{display:flex;}
+
+  #screen-dashboard{ display:block; }
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:70;
+    width:78vw;max-width:280px;
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    overflow-y:auto;
+    padding-top:16px;
+  }
+  .sidebar.open{ transform:translateX(0); box-shadow:0 0 40px rgba(0,0,0,.5); }
+  .main{ padding:16px 14px 50px; width:100%; }
+
+  .topbar{ flex-direction:column; align-items:flex-start; gap:12px; }
+  .topbar .stat-strip{ width:100%; }
+  .stat-strip{ overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; }
+  .stat-chip{ flex-shrink:0; }
+
+  .toolbar, .rep-toolbar, .req-lookup{ flex-direction:column; align-items:stretch; }
+  .toolbar .search-box, .rep-toolbar .search-box, .req-lookup .search-box{ max-width:none; }
+  .toolbar .spacer{ display:none; }
+  .rep-select{ width:100%; min-width:0; }
+  .toolbar button, .rep-toolbar button, .req-lookup button{ width:100%; }
+  .rep-toolbar > *[style*="margin-left:auto"]{ margin-left:0 !important; }
+
+  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ min-width:640px; }
+
+  .modal-overlay{ padding:0; align-items:flex-end; }
+  .modal{ max-width:none; width:100%; max-height:92vh; border-radius:14px 14px 0 0; }
+
+  .rqr-grid{ grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); }
+  .mh-head{ flex-direction:column; align-items:flex-start; }
+  .mh-count{ margin-left:0; }
+  .req-card-head{ flex-wrap:wrap; }
+}
+
+/* ------------------------------------------------------------
+   Parts-change rows: each field stacks one after another (no
+   side-scrolling table) on the User "Parts change" step and on
+   the Checker/Admin requisition cards. This is its own, wider
+   breakpoint (independent of the 860px layout switch above) so
+   it also kicks in on large-phone / landscape / "desktop site"
+   widths that sit between 860px and 1024px — those should never
+   fall back to the raw side-scrolling table either.
+   ------------------------------------------------------------ */
+@media (max-width: 1024px){
+  #req-parts-tablewrap, .req-card-body .table-wrap{ overflow-x:hidden; }
+  #req-parts-table, .req-card-body .table-wrap table{ min-width:0; width:100%; table-layout:fixed; }
+  #req-parts-table thead, .req-card-body .table-wrap thead{ display:none; }
+  #req-parts-table, #req-parts-table tbody, #req-parts-table tr, #req-parts-table td{
+    display:block; width:100%; max-width:100%;
+  }
+  .req-card-body .table-wrap table,
+  .req-card-body .table-wrap tbody,
+  .req-card-body .table-wrap tr,
+  .req-card-body .table-wrap td{ display:block; width:100%; max-width:100%; }
+
+  #req-parts-table tr{
+    border:1px solid var(--line); border-radius:8px; background:#fff;
+    padding:12px 14px 6px; margin-bottom:14px; position:relative;
+  }
+  #req-parts-table td{ border:none; padding:0 0 12px; word-break:break-word; text-align:left; }
+  #req-parts-table td[data-label]::before{
+    content:attr(data-label); display:block; font-family:var(--f-mono); font-size:10px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:5px;
+  }
+  #req-parts-table td select, #req-parts-table td input{ width:100%; max-width:100%; box-sizing:border-box; }
+  #req-parts-table td:last-child{ position:absolute; top:8px; right:10px; padding:0; width:auto; }
+
+  .req-card-body .table-wrap tr{
+    border:1px solid var(--line); border-radius:8px; background:#fff;
+    padding:10px 12px 10px; margin-bottom:10px;
+  }
+  .req-card-body .table-wrap td{ border:none; padding:5px 0; word-break:break-word; text-align:left; }
+  .req-card-body .table-wrap td[data-label]::before{
+    content:attr(data-label); display:block; font-family:var(--f-mono); font-size:10px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:3px;
+  }
+}
+
+/* ============================================================
+   DATABASE LOADING / CONNECTION STATE
+   ============================================================ */
+#db-loading-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:var(--graphite-900);
+  display:flex;align-items:center;justify-content:center;
+}
+#db-loading-overlay.hidden{display:none;}
+.db-loading-box{text-align:center;color:var(--steel-100);}
+.db-spinner{
+  width:40px;height:40px;margin:0 auto 16px;
+  border:3px solid rgba(255,255,255,.15);border-top-color:var(--amber-400);
+  border-radius:50%;animation:db-spin .8s linear infinite;
+}
+@keyframes db-spin{to{transform:rotate(360deg);}}
+.db-loading-text{font-family:var(--f-mono);font-size:13px;letter-spacing:.05em;color:#9AA0A6;}
+.db-loading-sub{font-family:var(--f-mono);font-size:10.5px;color:#6b7176;margin-top:8px;}
+
+#db-error-banner{
+  position:fixed;top:0;left:0;right:0;z-index:210;
+  background:var(--rust-600);color:#fff;padding:12px 16px;
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  font-family:var(--f-mono);font-size:12.5px;text-align:center;
+}
+#db-error-banner.hidden{display:none;}
+#db-error-retry{
+  background:#fff;color:var(--rust-700);border:none;border-radius:4px;
+  padding:6px 12px;font-weight:700;cursor:pointer;font-size:12px;
+}
+#db-sync-note{
+  position:fixed;bottom:14px;right:14px;z-index:60;
+  font-family:var(--f-mono);font-size:10.5px;color:#9AA0A6;
+  background:rgba(0,0,0,.35);padding:5px 10px;border-radius:4px;
+  display:flex;align-items:center;gap:6px;
+}
+#db-sync-note .dot{width:7px;height:7px;border-radius:50%;background:var(--moss-500);}
+#db-sync-note.saving .dot{background:var(--amber-400);}
+#db-sync-note.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="db-loading-overlay">
+  <div class="db-loading-box">
+    <div class="db-spinner"></div>
+    <div class="db-loading-text">Connecting to your database…</div>
+    <div class="db-loading-sub">First load can take a few seconds</div>
+  </div>
+</div>
+<div id="db-error-banner" class="hidden">
+  <span id="db-error-text"></span>
+  <button id="db-error-retry">Retry</button>
+</div>
+<div id="db-sync-note" class="hidden"><span class="dot"></span><span id="db-sync-text">Synced</span></div>
+
+<!-- ============================================================
+     LOGIN SCREEN
+============================================================ -->
+<div id="screen-login">
+  <div class="login-wrap">
+    <div class="plate">
+      <div class="rivet"></div><div class="rivet"></div><div class="rivet"></div><div class="rivet"></div>
+      <p class="brand-eyebrow">Mechanics Department</p>
+      <h1 class="brand-name">SGWICUS (BD) LIMITED</h1>
+      <p class="brand-sub">Spare Parts &amp; Machinery Inventory</p>
+
+      <div class="mode-grid" id="mode-grid">
+        <button class="mode-btn user" data-mode="user">
+          <span class="dot"></span>
+          <span class="mode-label">User</span>
+          <span class="mode-tag">Floor entry</span>
+        </button>
+        <button class="mode-btn checker" data-mode="checker">
+          <span class="lock-icon">🔒</span>
+          <span class="dot"></span>
+          <span class="mode-label">Checker</span>
+          <span class="mode-tag">Verification</span>
+        </button>
+        <button class="mode-btn admin" data-mode="admin">
+          <span class="lock-icon">🔒</span>
+          <span class="dot"></span>
+          <span class="mode-label">Admin</span>
+          <span class="mode-tag">Full access</span>
+        </button>
+      </div>
+
+      <div class="password-panel" id="password-panel">
+        <div class="password-inner">
+          <label class="field-label" id="pw-label" for="admin-pass">Admin password</label>
+          <div class="pw-row">
+            <input type="password" id="admin-pass" placeholder="Enter password" autocomplete="off">
+          </div>
+          <p class="error-text" id="pw-error">Incorrect password. Try again.</p>
+          <button type="button" id="forgot-pass-link" class="hint-text" style="background:none;border:none;text-decoration:underline;padding:0;color:#9AA0A6;cursor:pointer;">Forgot password?</button>
+        </div>
+      </div>
+
+      <div class="enter-row">
+        <button class="btn-primary" id="enter-btn" disabled>Enter →</button>
+      </div>
+    </div>
+    <p class="footer-strip">Dhaka Export Processing Zone · Internal Use Only</p>
+    <p class="footer-strip" style="margin-top:4px;opacity:.55;">Build V3.1 — Supabase-connected</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     DASHBOARD SHELL
+============================================================ -->
+<div id="screen-dashboard" class="hidden">
+  <div class="mobile-topbar">
+    <button class="hamburger-btn" id="hamburger-btn" aria-label="Open menu">☰</button>
+    <span class="mt-title">SGWICUS Inventory</span>
+    <span class="mt-role" id="mt-role-label">—</span>
+  </div>
+  <div id="sidebar-backdrop"></div>
+  <aside class="sidebar">
+    <div class="rivet"></div><div class="rivet"></div>
+    <div class="side-brand">
+      <div class="name">SGWICUS (BD) LTD</div>
+      <div class="dept">Mechanics Dept · Inventory</div>
+    </div>
+    <div class="side-role">
+      Signed in as
+      <b id="role-label">—</b>
+    </div>
+    <nav id="nav-list">
+      <div class="nav-item active" data-view="machine-list" data-roles="admin">
+        <span class="ni-icon">▤</span> Machine List
+      </div>
+      <div class="nav-item" data-view="spare-parts" data-roles="admin">
+        <span class="ni-icon">⚙</span> Spare Parts
+      </div>
+      <div class="nav-item" data-view="requisition" data-roles="user">
+        <span class="ni-icon">✎</span> Requisition
+      </div>
+      <div class="nav-item" data-view="approvals" data-roles="admin">
+        <span class="ni-icon">✓</span> Requisitions <span class="soon" id="approvals-badge" style="display:none;"></span>
+      </div>
+      <div class="nav-item" data-view="requesters" data-roles="admin">
+        <span class="ni-icon">☺</span> Requesters
+      </div>
+      <div class="nav-item" data-view="machine-history" data-roles="admin">
+        <span class="ni-icon">📈</span> Machine History
+      </div>
+      <div class="nav-item" data-view="settings" data-roles="admin">
+        <span class="ni-icon">🔑</span> Settings
+      </div>
+      <div class="nav-section-label" data-roles="admin">Reports</div>
+      <div class="nav-item" data-view="report-machine-inventory" data-roles="admin">
+        <span class="ni-icon">🗂️</span> Machine Inventory
+      </div>
+      <div class="nav-item" data-view="report-spare-parts" data-roles="admin">
+        <span class="ni-icon">🧾</span> Spare Parts Inventory
+      </div>
+      <div class="nav-item" data-view="report-breakdown-history" data-roles="admin">
+        <span class="ni-icon">📆</span> Breakdown History
+      </div>
+      <div class="nav-item" data-view="report-qr" data-roles="admin">
+        <span class="ni-icon">▤</span> QR Code Generator
+      </div>
+      <div class="nav-item" data-view="checker-queue" data-roles="checker">
+        <span class="ni-icon">▦</span> Checker Queue <span class="soon" id="checker-badge" style="display:none;"></span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" id="logout-btn">← Switch mode</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- MACHINE LIST VIEW (admin) -->
+    <div id="view-machine-list" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Step 2 · Admin only</div>
+          <h1>Machine List</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="stat-total">0</div><div class="lbl">Total</div></div>
+          <div class="stat-chip"><div class="num" id="stat-active">0</div><div class="lbl">Active</div></div>
+          <div class="stat-chip"><div class="num" id="stat-inactive">0</div><div class="lbl">Inactive</div></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Search traceability, brand, model…">
+        </div>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="print-master-btn">🖶 Print Master QR Sheet</button>
+        <button class="btn amber" id="add-machine-btn">+ Add Machine</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SL No</th>
+              <th>Type of Machine</th>
+              <th>Traceability No</th>
+              <th>Acquisition Date</th>
+              <th>Brand</th>
+              <th>Model</th>
+              <th>Serial No</th>
+              <th>Status</th>
+              <th>Remarks</th>
+              <th>QR</th>
+            </tr>
+          </thead>
+          <tbody id="machine-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SPARE PARTS VIEW (admin) -->
+    <div id="view-spare-parts" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Step 3 · Admin only</div>
+          <h1>Spare Parts</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="sp-stat-items">0</div><div class="lbl">Items</div></div>
+          <div class="stat-chip"><div class="num" id="sp-stat-purchased">0</div><div class="lbl">Purchased</div></div>
+          <div class="stat-chip"><div class="num" id="sp-stat-balance">0</div><div class="lbl">On Hand</div></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="sp-search-input" placeholder="Search item, ref, parts no…">
+        </div>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="purchase-history-btn">🗓 Purchase History</button>
+        <button class="btn amber" id="add-part-btn">+ Add Item</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SL</th>
+              <th>Type of Machine</th>
+              <th>Ref. #</th>
+              <th>Item Name</th>
+              <th>Parts No.</th>
+              <th>Purchase Qty</th>
+              <th>Handover Qty</th>
+              <th>Balance Qty</th>
+              <th>History</th>
+            </tr>
+          </thead>
+          <tbody id="spare-tbody"></tbody>
+        </table>
+      </div>
+      <p class="table-note">Purchase Qty is cumulative — it's the total of every dated purchase entry logged for that item. Balance Qty = Purchase − Handover, calculated automatically. Handover Qty is editable inline.</p>
+    </div>
+
+    <!-- REQUISITION VIEW (user) -->
+    <div id="view-requisition" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Spare parts requisition</div>
+          <h1>Requisition</h1>
+        </div>
+      </div>
+
+      <!-- Step 1 — identify machine -->
+      <div class="req-step">
+        <div class="req-step-head"><span class="req-step-no">1</span> Identify the machine</div>
+        <div class="req-lookup">
+          <div class="search-box" style="max-width:none;flex:1;">
+            <input type="text" id="req-trace-input" placeholder="Enter Machine Traceability No. — e.g. SBL-BK01-0002">
+          </div>
+          <button class="btn amber" id="req-find-btn">Find machine</button>
+          <button class="btn ghost" id="req-scan-btn">▦ Scan QR</button>
+        </div>
+        <p class="req-hint" id="req-lookup-msg"></p>
+
+        <!-- machine confirm card -->
+        <div class="machine-confirm hidden" id="machine-confirm">
+          <div class="mc-head">
+            <span class="mc-badge">Machine found — please confirm</span>
+            <button class="btn ghost mc-change" id="req-change-machine">Change</button>
+          </div>
+          <div class="mc-grid" id="mc-grid"></div>
+        </div>
+      </div>
+
+      <!-- Step 2 — parts change -->
+      <div class="req-step hidden" id="req-parts-step">
+        <div class="req-step-head"><span class="req-step-no">2</span> Parts change</div>
+        <p class="req-hint">Item names below are limited to the parts registered for this machine type. Add a row for each part you need changed.</p>
+        <div class="table-wrap" id="req-parts-tablewrap">
+          <table id="req-parts-table">
+            <thead>
+              <tr>
+                <th style="min-width:210px;">Item Name</th>
+                <th>Request Qty</th>
+                <th>Return Available</th>
+                <th>Requested By</th>
+                <th style="min-width:190px;">Reason for Change</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="req-parts-tbody"></tbody>
+          </table>
+        </div>
+        <div class="req-add-row">
+          <button class="btn ghost" id="req-add-part-btn">+ Add part</button>
+        </div>
+
+        <div class="req-submit-bar">
+          <div class="req-submit-note" id="req-submit-note"></div>
+          <button class="btn amber" id="req-submit-btn">Submit for approval</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUISITION APPROVALS VIEW (admin) -->
+    <div id="view-approvals" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Admin · final approval queue</div>
+          <h1>Requisitions</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="ap-stat-pending">0</div><div class="lbl">Awaiting final</div></div>
+          <div class="stat-chip"><div class="num" id="ap-stat-hold">0</div><div class="lbl">On hold</div></div>
+          <div class="stat-chip"><div class="num" id="ap-stat-approved">0</div><div class="lbl">Approved</div></div>
+          <div class="stat-chip"><div class="num" id="ap-stat-rejected">0</div><div class="lbl">Denied</div></div>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Requisitions land here once a Checker has reviewed and forwarded them. Give each a final decision — Approve, Hold for more information, or Deny — with an optional comment. Approving logs the part change to that machine's history.</p>
+      <div class="toolbar">
+        <div class="req-filter-tabs" id="ap-filter-tabs">
+          <button class="chip-tab active" data-apf="all">All</button>
+          <button class="chip-tab" data-apf="Checker Approved">Awaiting final</button>
+          <button class="chip-tab" data-apf="On Hold">On hold</button>
+          <button class="chip-tab" data-apf="Approved">Approved</button>
+          <button class="chip-tab" data-apf="Denied">Denied</button>
+          <button class="chip-tab" data-apf="Checker Rejected">Checker-rejected</button>
+        </div>
+      </div>
+      <div id="approvals-list"></div>
+    </div>
+
+    <!-- REQUESTERS VIEW (admin) -->
+    <div id="view-requesters" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Admin · personnel</div>
+          <h1>Requesters</h1>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:640px;">These names populate the “Requested By” dropdown on the user requisition form. Add the personnel authorised to raise requisitions.</p>
+      <div class="req-add-name">
+        <input type="text" id="new-requester-input" placeholder="Full name — e.g. Md. Rakib Hasan">
+        <button class="btn amber" id="add-requester-btn">Add person</button>
+      </div>
+      <div class="table-wrap" style="max-width:560px;">
+        <table>
+          <thead><tr><th>SL</th><th>Name</th><th></th></tr></thead>
+          <tbody id="requesters-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+
+    <!-- CHECKER QUEUE VIEW (checker) -->
+    <div id="view-checker-queue" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Checker · verification</div>
+          <h1>Checker Queue</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="ck-stat-pending">0</div><div class="lbl">Awaiting review</div></div>
+          <div class="stat-chip"><div class="num" id="ck-stat-forwarded">0</div><div class="lbl">Forwarded</div></div>
+          <div class="stat-chip"><div class="num" id="ck-stat-rejected">0</div><div class="lbl">Rejected</div></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="req-filter-tabs" id="ck-filter-tabs">
+          <button class="chip-tab active" data-ckf="Pending">Awaiting review</button>
+          <button class="chip-tab" data-ckf="Checker Approved">Forwarded</button>
+          <button class="chip-tab" data-ckf="Checker Rejected">Rejected</button>
+          <button class="chip-tab" data-ckf="all">All</button>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Review requisitions raised by users against the machine and stock. Forward genuine part-change requests to Admin for final approval, or reject with a comment if the request doesn't check out.</p>
+      <div id="checker-list"></div>
+    </div>
+
+    <!-- MACHINE HISTORY VIEW (admin) -->
+    <div id="view-machine-history" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Admin · breakdown analysis</div>
+          <h1>Machine History</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="mh-stat-events">0</div><div class="lbl">Part changes</div></div>
+          <div class="stat-chip"><div class="num" id="mh-stat-machines">0</div><div class="lbl">Machines affected</div></div>
+          <div class="stat-chip"><div class="num" id="mh-stat-avg">0</div><div class="lbl">Avg / machine</div></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="mh-search-input" placeholder="Search traceability, brand, model…">
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Every requisition given <b>final Admin approval</b> is logged here against its machine. Sorted by frequency, highest first, to surface machines breaking down most often. Click a machine to see its full change log.</p>
+      <div id="machine-history-list"></div>
+    </div>
+
+    <!-- SETTINGS VIEW (admin) -->
+    <div id="view-settings" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Admin · access control</div>
+          <h1>Settings</h1>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:640px;">Change the login passwords used on the mode-select screen. New passwords apply immediately — anyone signing in after a change must use the updated password, including this session.</p>
+
+      <div class="req-step" style="max-width:480px;">
+        <div class="req-step-head"><span class="req-step-no">A</span> Admin password</div>
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="set-admin-pass">New admin password</label>
+          <input type="text" id="set-admin-pass" placeholder="Enter new password" autocomplete="off">
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn amber" id="save-admin-pass-btn">Update Admin Password</button>
+        </div>
+      </div>
+
+      <div class="req-step" style="max-width:480px;">
+        <div class="req-step-head"><span class="req-step-no">C</span> Checker password</div>
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="set-checker-pass">New checker password</label>
+          <input type="text" id="set-checker-pass" placeholder="Enter new password" autocomplete="off">
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn amber" id="save-checker-pass-btn">Update Checker Password</button>
+        </div>
+      </div>
+
+      <div class="req-step" style="max-width:480px;">
+        <div class="req-step-head"><span class="req-step-no">R</span> Recovery email</div>
+        <p class="req-hint">The email registered here is where each role's "Forgot password" reset link is sent. <b>Demo note:</b> this file isn't connected to a mail server yet, so the flow is simulated — once Supabase is wired in, this becomes a real email.</p>
+        <div class="form-field" style="margin-bottom:12px;">
+          <label for="set-admin-email">Admin email</label>
+          <input type="email" id="set-admin-email" placeholder="admin@yourcompany.com">
+        </div>
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="set-checker-email">Checker email</label>
+          <input type="email" id="set-checker-email" placeholder="checker@yourcompany.com">
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn amber" id="save-emails-btn">Save Emails</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT: MACHINE INVENTORY (admin) -->
+    <div id="view-report-machine-inventory" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Reports · master list</div>
+          <h1>Machine Inventory Report</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="rmi-stat-total">0</div><div class="lbl">Listed</div></div>
+          <div class="stat-chip"><div class="num" id="rmi-stat-active">0</div><div class="lbl">Active</div></div>
+          <div class="stat-chip"><div class="num" id="rmi-stat-inactive">0</div><div class="lbl">Inactive</div></div>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Master list of machines, grouped by type. Service Length is calculated as the time elapsed between Acquisition Date and today — <b id="rmi-report-date"></b>.</p>
+      <div class="rep-toolbar">
+        <select class="rep-select" id="rmi-type-filter"><option value="all">All machine types</option></select>
+        <div class="req-filter-tabs" id="rmi-status-tabs">
+          <button class="chip-tab active" data-rmis="all">All statuses</button>
+          <button class="chip-tab" data-rmis="Active">Active</button>
+          <button class="chip-tab" data-rmis="Inactive">Inactive</button>
+        </div>
+        <button class="btn amber" id="rmi-print-btn" style="margin-left:auto;">Print Report</button>
+      </div>
+      <div id="rmi-report-body"></div>
+    </div>
+
+    <!-- REPORT: SPARE PARTS INVENTORY (admin) -->
+    <div id="view-report-spare-parts" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Reports · usage by machine type</div>
+          <h1>Spare Parts Inventory Report</h1>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-chip"><div class="num" id="rsp-stat-items">0</div><div class="lbl">Items</div></div>
+          <div class="stat-chip"><div class="num" id="rsp-stat-events">0</div><div class="lbl">Use events</div></div>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Pick a machine type to see every spare part used against machines of that type — stock position plus a full item-wise usage history pulled from approved requisitions.</p>
+      <div class="rep-toolbar">
+        <select class="rep-select" id="rsp-type-filter"><option value="all">All machine types</option></select>
+        <button class="btn amber" id="rsp-print-btn" style="margin-left:auto;">Print Report</button>
+      </div>
+      <div id="rsp-report-body"></div>
+    </div>
+
+    <!-- REPORT: BREAKDOWN HISTORY (admin) -->
+    <div id="view-report-breakdown-history" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Reports · single-machine trend</div>
+          <h1>Breakdown History Report</h1>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Pick a specific machine, then a time grouping, to see how often its parts have been changed over time — useful for spotting a machine that's breaking down more often than it should.</p>
+      <div class="rep-toolbar">
+        <select class="rep-select" id="rbh-machine-filter" style="min-width:280px;"><option value="">Select a machine…</option></select>
+        <div class="req-filter-tabs" id="rbh-period-tabs">
+          <button class="chip-tab active" data-rbhp="month">Monthly</button>
+          <button class="chip-tab" data-rbhp="quarter">Quarterly</button>
+          <button class="chip-tab" data-rbhp="half">Half-Yearly</button>
+          <button class="chip-tab" data-rbhp="year">Annually</button>
+        </div>
+        <button class="btn amber" id="rbh-print-btn" style="margin-left:auto;">Print Report</button>
+      </div>
+      <div id="rbh-report-body"></div>
+    </div>
+
+    <!-- REPORT: QR CODE GENERATOR (admin) -->
+    <div id="view-report-qr" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Reports · printable tags</div>
+          <h1>QR Code Generator</h1>
+        </div>
+      </div>
+      <p class="req-hint" style="max-width:960px;">Generate printable QR tags for every machine of a chosen type, for one specific machine, or for a custom list of traceability numbers you paste in.</p>
+
+      <div class="tabs" style="margin-bottom:16px;">
+        <button class="rqr-tab-btn active" data-qrtab="type">By Machine Type</button>
+        <button class="rqr-tab-btn" data-qrtab="trace">By Traceability No.</button>
+        <button class="rqr-tab-btn" data-qrtab="custom">Custom List</button>
+      </div>
+
+      <!-- by type -->
+      <div id="rqr-panel-type">
+        <div class="rep-toolbar">
+          <select class="rep-select" id="rqr-type-filter"><option value="">Select a machine type…</option></select>
+          <button class="btn amber" id="rqr-type-print-btn" style="margin-left:auto;">Print QR Sheet</button>
+        </div>
+        <div id="rqr-type-preview"></div>
+      </div>
+
+      <!-- by traceability -->
+      <div id="rqr-panel-trace" class="hidden">
+        <div class="rep-toolbar">
+          <div class="search-box" style="max-width:360px;">
+            <input type="text" id="rqr-trace-search" placeholder="Search traceability no., type, brand, model…" autocomplete="off">
+          </div>
+          <button class="btn amber" id="rqr-trace-print-btn" style="margin-left:auto;">Print This Tag</button>
+        </div>
+        <div id="rqr-trace-results" class="rqr-search-results"></div>
+        <div id="rqr-trace-preview"></div>
+      </div>
+
+      <!-- custom list -->
+      <div id="rqr-panel-custom" class="hidden">
+        <div class="form-field" style="max-width:640px;">
+          <label>Traceability numbers — comma or new-line separated</label>
+          <textarea id="rqr-custom-input" rows="3" placeholder="e.g. SBL-BK01-0008, SBL-BK01-0010, SBL-BK01-0014" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;font-family:var(--f-mono);font-size:12.5px;resize:vertical;"></textarea>
+        </div>
+        <div class="rep-toolbar" style="margin-top:12px;">
+          <button class="btn amber" id="rqr-custom-generate-btn">Generate QR Codes</button>
+          <button class="btn ghost" id="rqr-custom-print-btn" style="margin-left:auto;">Print QR Sheet</button>
+        </div>
+        <p class="req-hint" id="rqr-custom-status" style="margin-top:10px;"></p>
+        <div id="rqr-custom-preview"></div>
+      </div>
+    </div>
+
+    <!-- PLACEHOLDER VIEW (user / checker) -->
+    <div id="view-placeholder" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow" id="ph-eyebrow">Step 1</div>
+          <h1 id="ph-title">—</h1>
+        </div>
+      </div>
+      <div class="placeholder-card">
+        <div class="pi" id="ph-icon">⚙</div>
+        <h2 id="ph-heading">Module in progress</h2>
+        <p id="ph-body">This mode is wired into login now. Its working screens arrive in the next build phase.</p>
+        <div class="roadmap-list">
+          <li>✓ Mode selection &amp; access control — live</li>
+          <li id="ph-roadmap-2">— Assigned module screens — phase 2</li>
+          <li>— Shared machine &amp; parts database — phase 2</li>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================
+     ADD MACHINE MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="add-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add Machine</h3>
+      <button class="modal-close" data-close="add-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="manual">Manual Entry</button>
+        <button class="tab-btn" data-tab="upload">Excel Upload</button>
+      </div>
+
+      <div id="tab-manual">
+        <div class="form-grid">
+          <div class="form-field"><label>Type of Machine</label><input type="text" id="f-type" placeholder="e.g. Single Needle Machine"></div>
+          <div class="form-field"><label>Traceability No</label><input type="text" id="f-trace" placeholder="e.g. SBL-BK01-0121"></div>
+          <div class="form-field"><label>Acquisition Date</label><input type="date" id="f-date"></div>
+          <div class="form-field"><label>Brand</label><input type="text" id="f-brand" placeholder="e.g. JUKI"></div>
+          <div class="form-field"><label>Model</label><input type="text" id="f-model" placeholder="e.g. DDL-8700A-7"></div>
+          <div class="form-field"><label>Serial No</label><input type="text" id="f-serial" placeholder="e.g. 4D0HJ09794"></div>
+          <div class="form-field"><label>Status</label>
+            <select id="f-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+          </div>
+          <div class="form-field full"><label>Remarks</label><input type="text" id="f-remarks" placeholder="Optional"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn ghost" data-close="add-modal">Cancel</button>
+          <button class="btn amber" id="save-manual-btn">Save Machine</button>
+        </div>
+      </div>
+
+      <div id="tab-upload" class="hidden">
+        <div class="upload-zone">
+          <div class="ui">⇪</div>
+          <p><b>Upload an .xlsx file</b> to add machines in bulk</p>
+          <p class="file-input-label">
+            <label class="btn ghost" for="excel-file" style="cursor:pointer;">Choose File</label>
+            <input type="file" id="excel-file" accept=".xlsx,.xls">
+          </p>
+          <p class="req">
+            Expected columns (row 1 header, any order):<br>
+            TYPE OF MACHINE · TRACEABILITY NO · ACQUISITION DATE · BRAND · MODEL · SERIAL NO · STATUS · REMARKS
+          </p>
+          <div class="upload-status" id="upload-status"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn ghost" data-close="add-modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ADD SPARE PART MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="add-part-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add Spare Part</h3>
+      <button class="modal-close" data-close="add-part-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" data-ptab="manual">Manual Entry</button>
+        <button class="tab-btn" data-ptab="upload">Excel Upload</button>
+      </div>
+
+      <div id="ptab-manual">
+        <div class="form-grid">
+          <div class="form-field"><label>Type of Machine</label><input type="text" id="p-type" placeholder="e.g. Single Needle Machine"></div>
+          <div class="form-field"><label>Ref. #</label><input type="text" id="p-ref" placeholder="e.g. BK1-170"></div>
+          <div class="form-field"><label>Item Name</label><input type="text" id="p-item" placeholder="e.g. Needle Plate"></div>
+          <div class="form-field"><label>Parts No.</label><input type="text" id="p-partno" placeholder="Optional"></div>
+          <div class="form-field"><label>Opening Purchase Qty</label><input type="number" id="p-opening" min="0" value="0"></div>
+          <div class="form-field"><label>Handover Qty</label><input type="number" id="p-handover" min="0" value="0"></div>
+        </div>
+        <p class="req" style="font-family:var(--f-mono);font-size:10.5px;color:var(--ink-soft);margin-top:12px;">
+          Opening qty is logged as the first cumulative purchase entry, dated today. Later purchases add to it from the Purchase History screen.
+        </p>
+        <div class="form-actions">
+          <button class="btn ghost" data-close="add-part-modal">Cancel</button>
+          <button class="btn amber" id="save-part-btn">Save Item</button>
+        </div>
+      </div>
+
+      <div id="ptab-upload" class="hidden">
+        <div class="upload-zone">
+          <div class="ui">⇪</div>
+          <p><b>Upload an .xlsx file</b> to add spare parts in bulk</p>
+          <p class="file-input-label">
+            <label class="btn ghost" for="part-excel-file" style="cursor:pointer;">Choose File</label>
+            <input type="file" id="part-excel-file" accept=".xlsx,.xls">
+          </p>
+          <p class="req">
+            Expected columns (row 1 header, any order):<br>
+            TYPE OF MACHINE · REF. # · ITEM NAME · PARTS NO. · PURCHASED QTY · HANDOVER QTY
+          </p>
+          <div class="upload-status" id="part-upload-status"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn ghost" data-close="add-part-modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PURCHASE HISTORY MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="history-modal">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-head">
+      <h3>Purchase History</h3>
+      <button class="modal-close" data-close="history-modal">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- date-to-date filter -->
+      <div class="hist-filter">
+        <div class="form-field">
+          <label>Item (Ref. #)</label>
+          <select id="hist-ref-filter"><option value="">All items</option></select>
+        </div>
+        <div class="form-field">
+          <label>From date</label>
+          <input type="date" id="hist-from">
+        </div>
+        <div class="form-field">
+          <label>To date</label>
+          <input type="date" id="hist-to">
+        </div>
+        <button class="btn ghost" id="hist-clear-btn" style="align-self:end;">Clear</button>
+      </div>
+
+      <div class="hist-summary" id="hist-summary">Showing all purchase entries.</div>
+
+      <div class="tabs" style="margin-top:18px;">
+        <button class="tab-btn active" data-htab="log">Log</button>
+        <button class="tab-btn" data-htab="add">Add Entry</button>
+        <button class="tab-btn" data-htab="upload">Excel Upload</button>
+      </div>
+
+      <!-- LOG -->
+      <div id="htab-log">
+        <div class="table-wrap" style="max-height:320px;overflow:auto;">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Ref. #</th><th>Item Name</th><th>Qty</th><th>Note</th><th></th></tr>
+            </thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADD ENTRY (manual, date-to-date) -->
+      <div id="htab-add" class="hidden">
+        <div class="form-grid">
+          <div class="form-field"><label>Purchase Date</label><input type="date" id="he-date"></div>
+          <div class="form-field"><label>Item (Ref. #)</label><select id="he-ref"></select></div>
+          <div class="form-field"><label>Quantity Purchased</label><input type="number" id="he-qty" min="1" placeholder="e.g. 50"></div>
+          <div class="form-field"><label>Note / Supplier</label><input type="text" id="he-note" placeholder="Optional"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn ghost" data-htab-cancel>Cancel</button>
+          <button class="btn amber" id="save-entry-btn">Add to Purchase Qty</button>
+        </div>
+      </div>
+
+      <!-- EXCEL UPLOAD -->
+      <div id="htab-upload" class="hidden">
+        <div class="upload-zone">
+          <div class="ui">⇪</div>
+          <p><b>Upload an .xlsx purchase log</b> — every row adds to cumulative Purchase Qty</p>
+          <p class="file-input-label">
+            <label class="btn ghost" for="hist-excel-file" style="cursor:pointer;">Choose File</label>
+            <input type="file" id="hist-excel-file" accept=".xlsx,.xls">
+          </p>
+          <p class="req">
+            Expected columns (row 1 header, any order):<br>
+            DATE · REF. # · QUANTITY · NOTE (optional)<br>
+            Ref. # must match an existing item in the master list.
+          </p>
+          <div class="upload-status" id="hist-upload-status"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     QR MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="qr-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>Machine Tag</h3>
+      <button class="modal-close" data-close="qr-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-tag">
+        <div class="qr-eyelet"></div>
+        <div class="qr-canvas-holder" id="qr-canvas-holder"></div>
+        <div class="qr-trace" id="qr-trace-label">—</div>
+        <div class="qr-companyline">SGWICUS (BD) Limited</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn ghost" data-close="qr-modal">Close</button>
+        <button class="btn amber" id="print-single-btn">🖶 Print This Tag</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     QR SCANNER MODAL (requisition machine lookup)
+============================================================ -->
+<div class="modal-overlay hidden" id="scan-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h3>Scan Machine QR</h3>
+      <button class="modal-close" data-close="scan-modal" id="scan-close-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="scan-region" style="width:100%;min-height:260px;background:#111;border-radius:6px;overflow:hidden;"></div>
+      <p class="req-hint" id="scan-status" style="margin-top:12px;">Point the camera at a machine's QR tag.</p>
+      <p class="req-hint" style="margin-top:4px;color:var(--ink-soft);">Tip: hold the phone steady about 15–20cm from the tag and fill the box — give the camera a second to autofocus if it looks blurry at first.</p>
+      <div class="form-field" style="margin-top:14px;">
+        <label>No camera? Type the traceability number</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="scan-manual-input" placeholder="e.g. SBL-BK01-0002" style="flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:4px;">
+          <button class="btn amber" id="scan-manual-btn">Use</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD RECOVERY MODAL -->
+<div class="modal-overlay hidden" id="recovery-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h3 id="recovery-title">Recover Password</h3>
+      <button class="modal-close" data-close="recovery-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- step 1: enter registered email -->
+      <div id="recovery-step-email">
+        <p class="req-hint" style="margin-bottom:4px;">Enter the email registered for <b id="recovery-mode-label">Admin</b> to receive a password reset link.</p>
+        <div class="form-field" style="margin:14px 0;">
+          <label for="recovery-email-input">Email address</label>
+          <input type="email" id="recovery-email-input" placeholder="you@company.com" autocomplete="off">
+        </div>
+        <p class="error-text" id="recovery-email-error">That email doesn't match our records for this role.</p>
+        <div class="form-actions">
+          <button class="btn ghost" data-close="recovery-modal">Cancel</button>
+          <button class="btn amber" id="recovery-send-btn">Send reset link</button>
+        </div>
+      </div>
+      <!-- step 2: simulated inbox -->
+      <div id="recovery-step-sent" class="hidden">
+        <div class="req-note">
+          📧 <b>Demo simulation</b> — a real deployment (once connected to Supabase) sends an actual email with a secure reset link to <b id="recovery-sent-email"></b>. For this demo, click below to simulate opening that link from the inbox.
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button class="btn ghost" data-close="recovery-modal">Cancel</button>
+          <button class="btn amber" id="recovery-open-link-btn">Open reset link (demo) →</button>
+        </div>
+      </div>
+      <!-- step 3: forced new password -->
+      <div id="recovery-step-reset" class="hidden">
+        <p class="req-hint" style="margin-bottom:4px;">Link verified for <b id="recovery-mode-label-2">Admin</b>. You must set a new password before continuing.</p>
+        <div class="form-field" style="margin:14px 0 12px;">
+          <label for="recovery-newpass-input">New password</label>
+          <input type="text" id="recovery-newpass-input" placeholder="Enter new password" autocomplete="off">
+        </div>
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="recovery-newpass-confirm">Confirm new password</label>
+          <input type="text" id="recovery-newpass-confirm" placeholder="Re-enter new password" autocomplete="off">
+        </div>
+        <p class="error-text" id="recovery-reset-error">Passwords don't match — try again.</p>
+        <div class="form-actions">
+          <button class="btn amber" id="recovery-save-btn">Set new password &amp; continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   STATE — seeded with real register rows (SGWICUS Mechanics Dept)
+   ============================================================ */
+let machines = [];
+
+let selectedMode = null;
+const MODE_PASSWORDS = { admin: 'admin123', checker: 'checker123' };
+const MODE_LABELS = { admin: 'Admin', checker: 'Checker' };
+let MODE_EMAILS = { admin: 'admin@sgwicus-demo.com', checker: 'checker@sgwicus-demo.com' };
+let recoveryTargetMode = null;
+
+/* ============================================================
+   LOGIN LOGIC
+   ============================================================ */
+const modeGrid = document.getElementById('mode-grid');
+const pwPanel = document.getElementById('password-panel');
+const pwInput = document.getElementById('admin-pass');
+const pwError = document.getElementById('pw-error');
+const pwLabel = document.getElementById('pw-label');
+const enterBtn = document.getElementById('enter-btn');
+
+modeGrid.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.mode-btn');
+  if(!btn) return;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMode = btn.dataset.mode;
+  pwError.classList.remove('show');
+
+  if(MODE_PASSWORDS[selectedMode]){
+    pwLabel.textContent = MODE_LABELS[selectedMode] + ' password';
+    pwPanel.classList.add('open');
+    pwInput.value = '';
+    setTimeout(()=>pwInput.focus(), 200);
+    enterBtn.disabled = true;
+  } else {
+    pwPanel.classList.remove('open');
+    enterBtn.disabled = false;
+  }
+});
+
+pwInput.addEventListener('input', ()=>{
+  enterBtn.disabled = pwInput.value.trim().length === 0;
+  pwError.classList.remove('show');
+});
+pwInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' && !enterBtn.disabled) enterBtn.click(); });
+
+enterBtn.addEventListener('click', ()=>{
+  if(!selectedMode) return;
+  if(MODE_PASSWORDS[selectedMode]){
+    if(pwInput.value !== MODE_PASSWORDS[selectedMode]){
+      pwError.classList.add('show');
+      pwInput.focus();
+      return;
+    }
+  }
+  enterDashboard(selectedMode);
+});
+
+function enterDashboard(mode){
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-dashboard').classList.remove('hidden');
+  document.getElementById('role-label').textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+  document.getElementById('mt-role-label').textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
+
+  // Show only nav items (and section labels) whose data-roles includes this mode
+  document.querySelectorAll('#nav-list .nav-item, #nav-list .nav-section-label').forEach(n=>{
+    const roles = (n.dataset.roles || '').split(',').map(s=>s.trim());
+    n.classList.toggle('hidden', !roles.includes(mode));
+  });
+
+  document.getElementById('view-placeholder').classList.add('hidden');
+  if(mode === 'admin'){
+    renderTable();
+    renderSpareTable();
+    renderRequesters();
+    renderApprovals();
+    renderMachineHistory();
+    switchView('machine-list');
+  } else if(mode === 'user'){
+    populateRequesterDropdowns();
+    resetRequisition();
+    switchView('requisition');
+  } else {
+    // checker
+    renderCheckerQueue();
+    switchView('checker-queue');
+  }
+}
+
+const ALL_VIEWS = ['machine-list','spare-parts','requisition','approvals','requesters','checker-queue','machine-history','settings','report-machine-inventory','report-spare-parts','report-breakdown-history','report-qr'];
+function switchView(view){
+  document.querySelectorAll('#nav-list .nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.view === view);
+  });
+  ALL_VIEWS.forEach(v=>{
+    document.getElementById('view-'+v).classList.toggle('hidden', v !== view);
+  });
+  if(view === 'approvals') renderApprovals();
+  if(view === 'requesters') renderRequesters();
+  if(view === 'checker-queue') renderCheckerQueue();
+  if(view === 'machine-history') renderMachineHistory();
+  if(view === 'report-machine-inventory') renderReportMachineInventory();
+  if(view === 'report-spare-parts') renderReportSpareParts();
+  if(view === 'report-breakdown-history') renderReportBreakdownHistory();
+  if(view === 'report-qr') renderReportQr();
+}
+
+document.getElementById('nav-list').addEventListener('click', (e)=>{
+  const item = e.target.closest('.nav-item');
+  if(!item || item.classList.contains('disabled') || !item.dataset.view) return;
+  switchView(item.dataset.view);
+  closeSidebarDrawer();
+});
+
+/* ---------- mobile sidebar drawer ---------- */
+function openSidebarDrawer(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('show');
+}
+function closeSidebarDrawer(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('show');
+}
+document.getElementById('hamburger-btn').addEventListener('click', openSidebarDrawer);
+document.getElementById('sidebar-backdrop').addEventListener('click', closeSidebarDrawer);
+
+document.getElementById('logout-btn').addEventListener('click', ()=>{
+  document.getElementById('screen-dashboard').classList.add('hidden');
+  document.getElementById('screen-login').classList.remove('hidden');
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
+  pwPanel.classList.remove('open');
+  enterBtn.disabled = true;
+  selectedMode = null;
+  closeSidebarDrawer();
+});
+
+/* ---------- settings (admin) — password management ---------- */
+document.getElementById('save-admin-pass-btn').addEventListener('click', ()=>{
+  const inp = document.getElementById('set-admin-pass');
+  const val = inp.value.trim();
+  if(!val){ showToast('Enter a new admin password.'); return; }
+  if(val.length < 4){ showToast('Use at least 4 characters.'); return; }
+  MODE_PASSWORDS.admin = val;
+  inp.value = '';
+  showToast('Admin password updated.');
+});
+document.getElementById('save-checker-pass-btn').addEventListener('click', ()=>{
+  const inp = document.getElementById('set-checker-pass');
+  const val = inp.value.trim();
+  if(!val){ showToast('Enter a new checker password.'); return; }
+  if(val.length < 4){ showToast('Use at least 4 characters.'); return; }
+  MODE_PASSWORDS.checker = val;
+  inp.value = '';
+  showToast('Checker password updated.');
+});
+
+document.getElementById('save-emails-btn').addEventListener('click', ()=>{
+  const aInp = document.getElementById('set-admin-email');
+  const cInp = document.getElementById('set-checker-email');
+  const a = aInp.value.trim();
+  const c = cInp.value.trim();
+  if(!a || !a.includes('@') || !c || !c.includes('@')){ showToast('Enter a valid email for both roles.'); return; }
+  MODE_EMAILS = { admin: a.toLowerCase(), checker: c.toLowerCase() };
+  showToast('Recovery emails updated.');
+});
+
+/* ---------- forgot password (login screen) — simulated email flow ---------- */
+document.getElementById('forgot-pass-link').addEventListener('click', ()=>{
+  if(!selectedMode || !MODE_PASSWORDS[selectedMode]){
+    showToast('Select Admin or Checker mode first.');
+    return;
+  }
+  recoveryTargetMode = selectedMode;
+  document.getElementById('recovery-mode-label').textContent = MODE_LABELS[selectedMode];
+  document.getElementById('recovery-email-input').value = '';
+  document.getElementById('recovery-email-error').classList.remove('show');
+  document.getElementById('recovery-step-email').classList.remove('hidden');
+  document.getElementById('recovery-step-sent').classList.add('hidden');
+  document.getElementById('recovery-step-reset').classList.add('hidden');
+  openModal('recovery-modal');
+  setTimeout(()=>document.getElementById('recovery-email-input').focus(), 150);
+});
+
+document.getElementById('recovery-send-btn').addEventListener('click', ()=>{
+  const given = document.getElementById('recovery-email-input').value.trim().toLowerCase();
+  if(!given || given !== MODE_EMAILS[recoveryTargetMode]){
+    document.getElementById('recovery-email-error').classList.add('show');
+    return;
+  }
+  document.getElementById('recovery-email-error').classList.remove('show');
+  document.getElementById('recovery-sent-email').textContent = MODE_EMAILS[recoveryTargetMode];
+  document.getElementById('recovery-step-email').classList.add('hidden');
+  document.getElementById('recovery-step-sent').classList.remove('hidden');
+  showToast(`Reset link "sent" to ${MODE_EMAILS[recoveryTargetMode]} (demo simulation).`);
+});
+
+document.getElementById('recovery-open-link-btn').addEventListener('click', ()=>{
+  document.getElementById('recovery-mode-label-2').textContent = MODE_LABELS[recoveryTargetMode];
+  document.getElementById('recovery-step-sent').classList.add('hidden');
+  document.getElementById('recovery-step-reset').classList.remove('hidden');
+  document.getElementById('recovery-newpass-input').value = '';
+  document.getElementById('recovery-newpass-confirm').value = '';
+  document.getElementById('recovery-reset-error').classList.remove('show');
+  setTimeout(()=>document.getElementById('recovery-newpass-input').focus(), 150);
+});
+
+document.getElementById('recovery-save-btn').addEventListener('click', ()=>{
+  const val = document.getElementById('recovery-newpass-input').value.trim();
+  const confirm = document.getElementById('recovery-newpass-confirm').value.trim();
+  const err = document.getElementById('recovery-reset-error');
+  if(!val || val.length < 4){ showToast('Use at least 4 characters.'); return; }
+  if(val !== confirm){ err.classList.add('show'); return; }
+  err.classList.remove('show');
+  MODE_PASSWORDS[recoveryTargetMode] = val;
+  closeModal('recovery-modal');
+  showToast(`${MODE_LABELS[recoveryTargetMode]} password reset. Sign in with the new password.`);
+  pwInput.value = '';
+  pwError.classList.remove('show');
+  setTimeout(()=>pwInput.focus(), 150);
+});
+
+/* ============================================================
+   TABLE RENDER
+   ============================================================ */
+const tbody = document.getElementById('machine-tbody');
+const searchInput = document.getElementById('search-input');
+
+function fmtDate(d){
+  if(!d) return 'N/A';
+  const dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+}
+
+function renderTable(){
+  const q = searchInput.value.trim().toLowerCase();
+  const filtered = machines.filter(m=>{
+    if(!q) return true;
+    return [m.type,m.trace,m.brand,m.model,m.serial].join(' ').toLowerCase().includes(q);
+  });
+
+  tbody.innerHTML = '';
+  if(filtered.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No machines match that search. Try a different traceability number, brand, or model.</td></tr>';
+  } else {
+    filtered.forEach((m, idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="sl-cell">${m.sl}</td>
+        <td>${m.type}</td>
+        <td class="trace-cell">${m.trace}</td>
+        <td>${fmtDate(m.date)}</td>
+        <td>${m.brand}</td>
+        <td>${m.model}</td>
+        <td class="trace-cell">${m.serial}</td>
+        <td>
+          <select class="status-select ${m.status.toLowerCase()}" data-trace="${m.trace}">
+            <option value="Active" ${m.status==='Active'?'selected':''}>Active</option>
+            <option value="Inactive" ${m.status==='Inactive'?'selected':''}>Inactive</option>
+          </select>
+        </td>
+        <td><input type="text" class="remarks-input" data-trace="${m.trace}" value="${(m.remarks||'').replace(/"/g,'&quot;')}" placeholder="Add remarks…"></td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" data-qr="${m.trace}" title="View / Print QR">▦</button>
+            <button class="icon-btn danger" data-del-machine="${m.trace}" title="Delete machine">🗑</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('stat-total').textContent = machines.length;
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById('stat-total').textContent = machines.length;
+  document.getElementById('stat-active').textContent = machines.filter(m=>m.status==='Active').length;
+  document.getElementById('stat-inactive').textContent = machines.filter(m=>m.status==='Inactive').length;
+}
+
+searchInput.addEventListener('input', renderTable);
+
+tbody.addEventListener('click', async (e)=>{
+  const qrBtn = e.target.closest('[data-qr]');
+  if(qrBtn){ openQrModal(qrBtn.dataset.qr); return; }
+  const delBtn = e.target.closest('[data-del-machine]');
+  if(delBtn){
+    const trace = delBtn.dataset.delMachine;
+    if(!confirm(`Delete machine ${trace}? This removes it from the register and its QR tag permanently. Breakdown/change history already logged against this trace is kept for reporting. This cannot be undone.`)) return;
+    delBtn.disabled = true;
+    try{
+      await dbDeleteMachine(trace);
+    }catch(err){
+      showToast('Could not delete — check your connection and try again.');
+      delBtn.disabled = false;
+      return;
+    }
+    machines = machines.filter(m=>m.trace !== trace);
+    renderTable();
+    showToast(`${trace} deleted.`);
+  }
+});
+
+tbody.addEventListener('change', async (e)=>{
+  const sel = e.target.closest('.status-select');
+  if(!sel) return;
+  const m = machines.find(x=>x.trace === sel.dataset.trace);
+  if(!m) return;
+  const prevStatus = m.status;
+  m.status = sel.value;
+  sel.className = 'status-select ' + sel.value.toLowerCase();
+  updateStats();
+  try{
+    await dbUpdateMachineStatus(m.trace, m.status);
+    showToast(`${m.trace} marked ${sel.value}.`);
+  }catch(err){
+    m.status = prevStatus;
+    sel.value = prevStatus;
+    sel.className = 'status-select ' + prevStatus.toLowerCase();
+    updateStats();
+    showToast('Could not save — check your connection and try again.');
+  }
+});
+
+const remarksSaveTimers = {};
+tbody.addEventListener('input', (e)=>{
+  const inp = e.target.closest('.remarks-input');
+  if(!inp) return;
+  const m = machines.find(x=>x.trace === inp.dataset.trace);
+  if(!m) return;
+  m.remarks = inp.value;
+  clearTimeout(remarksSaveTimers[m.trace]);
+  remarksSaveTimers[m.trace] = setTimeout(async ()=>{
+    try{
+      await dbUpdateMachineRemarks(m.trace, m.remarks);
+    }catch(err){
+      showToast(`Could not save remarks for ${m.trace} — check your connection.`);
+    }
+  }, 700);
+});
+
+/* ============================================================
+   MODAL PLUMBING
+   ============================================================ */
+function openModal(id){ document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click', ()=>closeModal(el.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.add('hidden'); });
+});
+
+document.getElementById('add-machine-btn').addEventListener('click', ()=>{
+  document.querySelectorAll('#add-modal .form-field input, #add-modal .form-field select').forEach(el=>{
+    if(el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+  });
+  document.getElementById('upload-status').textContent = '';
+  switchTab('manual');
+  openModal('add-modal');
+});
+
+/* tabs */
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.getElementById('tab-manual').classList.toggle('hidden', name!=='manual');
+  document.getElementById('tab-upload').classList.toggle('hidden', name!=='upload');
+}
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=>switchTab(b.dataset.tab));
+});
+
+/* manual save */
+document.getElementById('save-manual-btn').addEventListener('click', async ()=>{
+  const type = document.getElementById('f-type').value.trim();
+  const trace = document.getElementById('f-trace').value.trim();
+  const brand = document.getElementById('f-brand').value.trim();
+
+  if(!type || !trace || !brand){
+    showToast('Type of Machine, Traceability No, and Brand are required.');
+    return;
+  }
+  if(machines.some(m=>m.trace.toLowerCase() === trace.toLowerCase())){
+    showToast(`Traceability No "${trace}" already exists.`);
+    return;
+  }
+
+  const nextSl = String(machines.length + 1).padStart(2,'0');
+  const newMachine = {
+    sl: nextSl,
+    type: type.toUpperCase(),
+    trace: trace.toUpperCase(),
+    date: document.getElementById('f-date').value,
+    brand: brand.toUpperCase(),
+    model: document.getElementById('f-model').value.trim(),
+    serial: document.getElementById('f-serial').value.trim(),
+    status: document.getElementById('f-status').value,
+    remarks: document.getElementById('f-remarks').value.trim(),
+  };
+  const saveBtn = document.getElementById('save-manual-btn');
+  saveBtn.disabled = true;
+  try{
+    await dbAddMachine(newMachine);
+  }catch(err){
+    showToast('Could not save — check your connection and try again.');
+    saveBtn.disabled = false;
+    return;
+  }
+  saveBtn.disabled = false;
+  machines.push(newMachine);
+  renderTable();
+  closeModal('add-modal');
+  showToast(`Machine ${trace.toUpperCase()} added to the register.`);
+});
+
+/* excel upload */
+document.getElementById('excel-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('upload-status');
+  if(!file) return;
+  statusEl.className = 'upload-status';
+  statusEl.textContent = 'Reading file…';
+
+  const reader = new FileReader();
+  reader.onload = async (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      let skipped = 0;
+      const toAdd = [];
+
+      rows.forEach(r=>{
+        const norm = {};
+        Object.keys(r).forEach(k=>{ norm[k.trim().toUpperCase()] = r[k]; });
+        const trace = String(norm['TRACEABILITY NO'] || '').trim();
+        const type = String(norm['TYPE OF MACHINE'] || '').trim();
+        const traceLower = trace.toLowerCase();
+        if(!trace || !type || machines.some(m=>m.trace.toLowerCase()===traceLower) || toAdd.some(m=>m.trace.toLowerCase()===traceLower)){
+          skipped++; return;
+        }
+        let dateVal = norm['ACQUISITION DATE'] || '';
+        if(dateVal instanceof Date) dateVal = dateVal.toISOString().slice(0,10);
+
+        const nextSl = String(machines.length + toAdd.length + 1).padStart(2,'0');
+        toAdd.push({
+          sl: nextSl,
+          type: type.toUpperCase(),
+          trace: trace.toUpperCase(),
+          date: String(dateVal || ''),
+          brand: String(norm['BRAND'] || '').toUpperCase(),
+          model: String(norm['MODEL'] || ''),
+          serial: String(norm['SERIAL NO'] || norm['SERIAL'] || ''),
+          status: (String(norm['STATUS']||'Active').toLowerCase()==='inactive') ? 'Inactive' : 'Active',
+          remarks: String(norm['REMARKS'] || ''),
+        });
+      });
+
+      if(toAdd.length){
+        try{
+          await dbAddMachines(toAdd);
+        }catch(err){
+          statusEl.className = 'upload-status err';
+          statusEl.textContent = 'Could not save to the database — check your connection and try again.';
+          return;
+        }
+      }
+      machines.push(...toAdd);
+      const added = toAdd.length;
+
+      renderTable();
+      statusEl.className = 'upload-status ok';
+      statusEl.textContent = `Imported ${added} machine${added===1?'':'s'}.` + (skipped ? ` Skipped ${skipped} (missing traceability no or already on file).` : '');
+      if(added) showToast(`${added} machine${added===1?'':'s'} imported from Excel.`);
+    }catch(err){
+      statusEl.className = 'upload-status err';
+      statusEl.textContent = 'Could not read that file. Confirm it is a valid .xlsx with a header row.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   QR — payload encodes full detail so a scan shows the record;
+   the printed/on-screen tag itself shows only the QR + trace no.
+   ============================================================ */
+function qrPayload(m){
+  return [
+    `TRACE #: ${m.trace}`,
+    `TYPE: ${m.type}`,
+    `BRAND: ${m.brand}`,
+    `MODEL: ${m.model}`,
+    `SERIAL #: ${m.serial}`,
+    `ACQUISITION DATE: ${m.date ? fmtDate(m.date).toUpperCase() : 'N/A'}`,
+  ].join('\n');
+}
+
+/* Renders a QR into a detached, off-screen node and returns a PNG data URL.
+   Works whether or not the node stays in the visible DOM, and is what makes
+   printing reliable — the print window gets a plain <img>, no library needed.
+   Always rendered at a much higher pixel resolution than the requested
+   display size (the <img> width/height attributes scale it back down) —
+   a small physical QR sticker still needs crisp, high-resolution module
+   edges for a phone camera to resolve it; a canvas rendered at the same
+   tiny pixel size as the display comes out soft/pixelated and hard to scan. */
+function generateQrDataUrl(text, size){
+  const temp = document.createElement('div');
+  temp.style.position = 'fixed';
+  temp.style.left = '-9999px';
+  document.body.appendChild(temp);
+  const renderSize = Math.max(size * 4, 400);
+  new QRCode(temp, { text, width: renderSize, height: renderSize, correctLevel: QRCode.CorrectLevel.M });
+  const canvas = temp.querySelector('canvas');
+  const dataUrl = canvas ? canvas.toDataURL('image/png') : '';
+  document.body.removeChild(temp);
+  return dataUrl;
+}
+
+function openPrintWindow(title, bodyHtml){
+  const win = window.open('', '_blank', 'width=480,height=640');
+  if(!win){
+    showToast('Pop-up blocked — allow pop-ups for this page to print.');
+    return;
+  }
+  win.document.open();
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+    <style>
+      @page{ margin:10mm; }
+      body{ font-family:ui-monospace,"SF Mono","Roboto Mono",Consolas,monospace; margin:0; color:#15181A; }
+      .company{
+        font-family:"Arial Narrow","Helvetica Neue Condensed",sans-serif; font-weight:800;
+        text-transform:uppercase; letter-spacing:.06em;
+      }
+    </style>
+  </head><body>${bodyHtml}
+    <script>
+      window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };
+    <\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+let currentQrMachine = null;
+
+function openQrModal(trace){
+  const m = machines.find(x=>x.trace === trace);
+  if(!m) return;
+  currentQrMachine = m;
+
+  const dataUrl = generateQrDataUrl(qrPayload(m), 168);
+  document.getElementById('qr-canvas-holder').innerHTML =
+    `<img src="${dataUrl}" width="168" height="168" alt="QR code for ${m.trace}">`;
+  document.getElementById('qr-trace-label').textContent = m.trace;
+  openModal('qr-modal');
+}
+
+/* ============================================================
+   PRINT — single tag (own window, so the print preview always shows)
+   ============================================================ */
+document.getElementById('print-single-btn').addEventListener('click', ()=>{
+  if(!currentQrMachine) return;
+  const m = currentQrMachine;
+  const dataUrl = generateQrDataUrl(qrPayload(m), 260);
+
+  openPrintWindow(`Machine Tag — ${m.trace}`, `
+    <div style="text-align:center;padding:34px 20px;">
+      <div class="company" style="font-size:13px;margin-bottom:22px;">SGWICUS (BD) Limited — Mechanics Dept.</div>
+      <img src="${dataUrl}" width="260" height="260" alt="QR code">
+      <div style="font-weight:700;font-size:22px;letter-spacing:.05em;margin-top:16px;">${m.trace}</div>
+    </div>
+  `);
+});
+
+/* ============================================================
+   PRINT — master sheet (own window, grid sized to fill the page)
+   ============================================================ */
+document.getElementById('print-master-btn').addEventListener('click', ()=>{
+  if(machines.length === 0){ showToast('Add at least one machine before printing a master sheet.'); return; }
+
+  const cells = machines.map(m=>{
+    const dataUrl = generateQrDataUrl(qrPayload(m), 140);
+    return `
+      <div style="border:1px solid #999;border-radius:3px;padding:4mm 2mm 3mm;text-align:center;break-inside:avoid;">
+        <img src="${dataUrl}" width="70" height="70" style="margin-bottom:2mm;" alt="QR">
+        <div style="font-weight:700;font-size:9.5pt;letter-spacing:.03em;">${m.trace}</div>
+      </div>`;
+  }).join('');
+
+  openPrintWindow('Master QR Sheet — SGWICUS', `
+    <div style="padding:14mm;">
+      <div class="company" style="text-align:center;font-size:16px;margin-bottom:4px;">SGWICUS (BD) Limited — Machine QR Register</div>
+      <div style="text-align:center;font-size:9pt;color:#555;margin-bottom:8mm;">
+        Mechanics Department · ${machines.length} tags · Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6mm 4mm;">${cells}</div>
+    </div>
+  `);
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   ============  SPARE PARTS MODULE  ==========================
+   ============================================================ */
+
+/* Each part carries a `purchases` array of dated entries.
+   The opening cumulative from the register is seeded as the first
+   entry (dated 31-Dec-2024, "Opening balance"), so:
+     PURCHASE QTY  = sum of purchases[].qty   (cumulative)
+     BALANCE QTY   = PURCHASE QTY − handover                        */
+const OPENING_DATE = '2024-12-31';
+let entryCounter = 1;
+
+function seedPart(o){
+  return {
+    sl:o.sl, type:o.type, ref:o.ref, item:o.item, partno:o.partno,
+    handover:o.handover,
+    purchases: o.opening>0 ? [{id:entryCounter++, date:OPENING_DATE, qty:o.opening, note:'Opening balance'}] : []
+  };
+}
+
+let spareParts = [];
+
+function purchaseQty(p){ return p.purchases.reduce((s,e)=>s+(+e.qty||0), 0); }
+function balanceQty(p){ return purchaseQty(p) - (+p.handover||0); }
+
+/* ---------- master table ---------- */
+const spareTbody = document.getElementById('spare-tbody');
+const spSearch = document.getElementById('sp-search-input');
+
+function renderSpareTable(){
+  const q = spSearch.value.trim().toLowerCase();
+  const filtered = spareParts.filter(p=>{
+    if(!q) return true;
+    return [p.type,p.ref,p.item,p.partno].join(' ').toLowerCase().includes(q);
+  });
+
+  spareTbody.innerHTML = '';
+  if(filtered.length === 0){
+    spareTbody.innerHTML = '<tr class="empty-row"><td colspan="9">No spare parts match that search. Try a different item name, ref, or parts number.</td></tr>';
+  } else {
+    filtered.forEach(p=>{
+      const pq = purchaseQty(p);
+      const bal = balanceQty(p);
+      const balClass = bal < 0 ? 'neg' : (bal <= 5 ? 'low' : 'ok');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="sl-cell">${p.sl}</td>
+        <td>${p.type}</td>
+        <td class="ref-cell">${p.ref}</td>
+        <td>${p.item}</td>
+        <td class="ref-cell">${p.partno || '—'}</td>
+        <td class="qty-cell qty-purchase">${pq.toLocaleString()}</td>
+        <td class="qty-cell"><input type="number" class="qty-handover-input" data-ref="${p.ref}" value="${p.handover}" min="0"></td>
+        <td class="qty-balance ${balClass}">${bal.toLocaleString()}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn hist" data-hist-ref="${p.ref}" title="View purchase history">🗓</button>
+            <button class="icon-btn danger" data-del-part="${p.ref}" title="Delete spare part">🗑</button>
+          </div>
+        </td>
+      `;
+      spareTbody.appendChild(tr);
+    });
+  }
+  updateSpareStats();
+}
+
+function updateSpareStats(){
+  document.getElementById('sp-stat-items').textContent = spareParts.length;
+  document.getElementById('sp-stat-purchased').textContent =
+    spareParts.reduce((s,p)=>s+purchaseQty(p),0).toLocaleString();
+  document.getElementById('sp-stat-balance').textContent =
+    spareParts.reduce((s,p)=>s+balanceQty(p),0).toLocaleString();
+}
+
+spSearch.addEventListener('input', renderSpareTable);
+
+/* inline handover editing → recomputes balance live */
+const handoverSaveTimers = {};
+spareTbody.addEventListener('input', (e)=>{
+  const inp = e.target.closest('.qty-handover-input');
+  if(!inp) return;
+  const p = spareParts.find(x=>x.ref === inp.dataset.ref);
+  if(!p) return;
+  p.handover = Math.max(0, parseInt(inp.value||'0',10));
+  const row = inp.closest('tr');
+  const bal = balanceQty(p);
+  const balCell = row.querySelector('.qty-balance');
+  balCell.textContent = bal.toLocaleString();
+  balCell.className = 'qty-balance ' + (bal < 0 ? 'neg' : (bal <= 5 ? 'low' : 'ok'));
+  updateSpareStats();
+  clearTimeout(handoverSaveTimers[p.ref]);
+  handoverSaveTimers[p.ref] = setTimeout(async ()=>{
+    try{
+      await dbUpdateHandover(p.ref, p.handover);
+    }catch(err){
+      showToast(`Could not save handover qty for ${p.ref} — check your connection.`);
+    }
+  }, 700);
+});
+
+/* per-row history icon opens history modal filtered to that item; delete
+   icon removes the spare part (and its purchase history) entirely */
+spareTbody.addEventListener('click', async (e)=>{
+  const histBtn = e.target.closest('[data-hist-ref]');
+  if(histBtn){ openHistoryModal(histBtn.dataset.histRef); return; }
+  const delBtn = e.target.closest('[data-del-part]');
+  if(delBtn){
+    const ref = delBtn.dataset.delPart;
+    const p = spareParts.find(x=>x.ref === ref);
+    const label = p ? `${p.item} (${ref})` : ref;
+    if(!confirm(`Delete spare part ${label}? This removes it from the master list along with its purchase history and stops it appearing on requisition forms. This cannot be undone.`)) return;
+    delBtn.disabled = true;
+    try{
+      await dbDeleteSparePart(ref);
+    }catch(err){
+      showToast('Could not delete — check your connection and try again.');
+      delBtn.disabled = false;
+      return;
+    }
+    spareParts = spareParts.filter(x=>x.ref !== ref);
+    renderSpareTable();
+    showToast(`${label} deleted.`);
+  }
+});
+
+/* ---------- Add Spare Part modal ---------- */
+document.getElementById('add-part-btn').addEventListener('click', ()=>{
+  ['p-type','p-ref','p-item','p-partno'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-opening').value = '0';
+  document.getElementById('p-handover').value = '0';
+  document.getElementById('part-upload-status').textContent = '';
+  switchPartTab('manual');
+  openModal('add-part-modal');
+});
+
+function switchPartTab(name){
+  document.querySelectorAll('[data-ptab]').forEach(b=>b.classList.toggle('active', b.dataset.ptab===name));
+  document.getElementById('ptab-manual').classList.toggle('hidden', name!=='manual');
+  document.getElementById('ptab-upload').classList.toggle('hidden', name!=='upload');
+}
+document.querySelectorAll('[data-ptab]').forEach(b=>b.addEventListener('click', ()=>switchPartTab(b.dataset.ptab)));
+
+document.getElementById('save-part-btn').addEventListener('click', async ()=>{
+  const type = document.getElementById('p-type').value.trim();
+  const ref = document.getElementById('p-ref').value.trim();
+  const item = document.getElementById('p-item').value.trim();
+  if(!type || !ref || !item){ showToast('Type of Machine, Ref. #, and Item Name are required.'); return; }
+  if(spareParts.some(p=>p.ref.toLowerCase()===ref.toLowerCase())){ showToast(`Ref. "${ref}" already exists.`); return; }
+
+  const opening = Math.max(0, parseInt(document.getElementById('p-opening').value||'0',10));
+  const part = {
+    sl:String(spareParts.length+1).padStart(2,'0'),
+    type, ref, item,
+    partno: document.getElementById('p-partno').value.trim(),
+    handover: Math.max(0, parseInt(document.getElementById('p-handover').value||'0',10)),
+    purchases: opening>0 ? [{date:todayStr(), qty:opening, note:'Opening balance'}] : []
+  };
+  const saveBtn = document.getElementById('save-part-btn');
+  saveBtn.disabled = true;
+  try{
+    await dbAddSparePart(part);
+  }catch(err){
+    showToast('Could not save — check your connection and try again.');
+    saveBtn.disabled = false;
+    return;
+  }
+  saveBtn.disabled = false;
+  spareParts.push(part);
+  renderSpareTable();
+  closeModal('add-part-modal');
+  showToast(`Spare part ${ref} added.`);
+});
+
+/* bulk add spare parts via excel */
+document.getElementById('part-excel-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('part-upload-status');
+  if(!file) return;
+  statusEl.className='upload-status'; statusEl.textContent='Reading file…';
+  const reader = new FileReader();
+  reader.onload = async (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      let skipped=0;
+      const toAdd = [];
+      rows.forEach(r=>{
+        const norm={}; Object.keys(r).forEach(k=>norm[k.trim().toUpperCase()]=r[k]);
+        const ref=String(norm['REF. #']||norm['REF #']||norm['REF']||'').trim();
+        const item=String(norm['ITEM NAME']||'').trim();
+        const refLower = ref.toLowerCase();
+        if(!ref || !item || spareParts.some(p=>p.ref.toLowerCase()===refLower) || toAdd.some(p=>p.ref.toLowerCase()===refLower)){ skipped++; return; }
+        const opening=Math.max(0, parseInt(norm['PURCHASED QTY']||norm['PURCHASE QTY']||0,10)||0);
+        toAdd.push({
+          sl:String(spareParts.length+toAdd.length+1).padStart(2,'0'),
+          type:String(norm['TYPE OF MACHINE']||'').trim(),
+          ref, item,
+          partno:String(norm['PARTS NO.']||norm['PARTS NO']||''),
+          handover:Math.max(0, parseInt(norm['HANDOVER QTY']||0,10)||0),
+          purchases: opening>0 ? [{date:todayStr(), qty:opening, note:'Opening balance'}] : []
+        });
+      });
+
+      if(toAdd.length){
+        try{
+          await dbAddSparePartsBulk(toAdd);
+        }catch(err){
+          statusEl.className='upload-status err';
+          statusEl.textContent='Could not save to the database — check your connection and try again.';
+          return;
+        }
+      }
+      spareParts.push(...toAdd);
+      const added = toAdd.length;
+      renderSpareTable();
+      statusEl.className='upload-status ok';
+      statusEl.textContent=`Imported ${added} item${added===1?'':'s'}.`+(skipped?` Skipped ${skipped} (missing ref/name or duplicate).`:'');
+      if(added) showToast(`${added} spare part${added===1?'':'s'} imported.`);
+    }catch(err){
+      statusEl.className='upload-status err';
+      statusEl.textContent='Could not read that file. Confirm it is a valid .xlsx with a header row.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+});
+
+/* ============================================================
+   PURCHASE HISTORY (date-to-date, cumulative)
+   ============================================================ */
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function refToItem(ref){ const p=spareParts.find(x=>x.ref===ref); return p?p.item:''; }
+
+const histRefFilter = document.getElementById('hist-ref-filter');
+const histFrom = document.getElementById('hist-from');
+const histTo = document.getElementById('hist-to');
+const histTbody = document.getElementById('hist-tbody');
+
+function populateRefSelects(){
+  const opts = spareParts.map(p=>`<option value="${p.ref}">${p.ref} — ${p.item}</option>`).join('');
+  histRefFilter.innerHTML = '<option value="">All items</option>' + opts;
+  document.getElementById('he-ref').innerHTML = opts;
+}
+
+function openHistoryModal(preRef){
+  populateRefSelects();
+  histRefFilter.value = preRef || '';
+  histFrom.value = '';
+  histTo.value = '';
+  document.getElementById('he-date').value = todayStr();
+  if(preRef) document.getElementById('he-ref').value = preRef;
+  switchHistTab('log');
+  renderHistoryLog();
+  openModal('history-modal');
+}
+
+document.getElementById('purchase-history-btn').addEventListener('click', ()=>openHistoryModal(''));
+
+[histRefFilter, histFrom, histTo].forEach(el=>el.addEventListener('change', renderHistoryLog));
+document.getElementById('hist-clear-btn').addEventListener('click', ()=>{
+  histRefFilter.value=''; histFrom.value=''; histTo.value=''; renderHistoryLog();
+});
+
+function collectEntries(){
+  // flatten all purchase entries with their owning part
+  const all = [];
+  spareParts.forEach(p=>p.purchases.forEach(e=>all.push({...e, ref:p.ref, item:p.item})));
+  return all;
+}
+
+function filteredEntries(){
+  const ref = histRefFilter.value;
+  const from = histFrom.value;
+  const to = histTo.value;
+  return collectEntries().filter(e=>{
+    if(ref && e.ref !== ref) return false;
+    if(from && e.date < from) return false;
+    if(to && e.date > to) return false;
+    return true;
+  }).sort((a,b)=> b.date.localeCompare(a.date) || b.id-a.id);
+}
+
+function renderHistoryLog(){
+  const entries = filteredEntries();
+  histTbody.innerHTML = '';
+  if(entries.length === 0){
+    histTbody.innerHTML = '<tr class="empty-row"><td colspan="6">No purchase entries in this range. Add one from the “Add Entry” tab.</td></tr>';
+  } else {
+    entries.forEach(e=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${fmtDate(e.date)}</td>
+        <td class="ref-cell">${e.ref}</td>
+        <td>${e.item}</td>
+        <td class="qty-cell">${(+e.qty).toLocaleString()}</td>
+        <td>${e.note || '—'}</td>
+        <td><button class="hist-del" data-del-id="${e.id}" data-del-ref="${e.ref}" title="Remove entry">×</button></td>
+      `;
+      histTbody.appendChild(tr);
+    });
+  }
+
+  const total = entries.reduce((s,e)=>s+(+e.qty||0),0);
+  const ref = histRefFilter.value;
+  const range = (histFrom.value || histTo.value)
+    ? `${histFrom.value?fmtDate(histFrom.value):'start'} → ${histTo.value?fmtDate(histTo.value):'today'}`
+    : 'all dates';
+  document.getElementById('hist-summary').innerHTML =
+    `${ref ? `<b>${ref}</b> — ${refToItem(ref)}` : '<b>All items</b>'} · ${range} · `
+    + `${entries.length} entr${entries.length===1?'y':'ies'} · purchased total <b>${total.toLocaleString()}</b>`;
+}
+
+/* delete an entry (recomputes cumulative) */
+histTbody.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-del-id]');
+  if(!btn) return;
+  const id = +btn.dataset.delId;
+  const p = spareParts.find(x=>x.ref === btn.dataset.delRef);
+  if(!p) return;
+  btn.disabled = true;
+  try{
+    await dbDeletePurchase(id);
+  }catch(err){
+    showToast('Could not delete — check your connection and try again.');
+    btn.disabled = false;
+    return;
+  }
+  p.purchases = p.purchases.filter(en=>en.id !== id);
+  renderHistoryLog();
+  renderSpareTable();
+  showToast('Purchase entry removed. Purchase Qty updated.');
+});
+
+/* history tabs */
+function switchHistTab(name){
+  document.querySelectorAll('[data-htab]').forEach(b=>b.classList.toggle('active', b.dataset.htab===name));
+  document.getElementById('htab-log').classList.toggle('hidden', name!=='log');
+  document.getElementById('htab-add').classList.toggle('hidden', name!=='add');
+  document.getElementById('htab-upload').classList.toggle('hidden', name!=='upload');
+}
+document.querySelectorAll('[data-htab]').forEach(b=>b.addEventListener('click', ()=>switchHistTab(b.dataset.htab)));
+document.querySelector('[data-htab-cancel]').addEventListener('click', ()=>switchHistTab('log'));
+
+/* manual add entry → adds to cumulative Purchase Qty */
+document.getElementById('save-entry-btn').addEventListener('click', async ()=>{
+  const date = document.getElementById('he-date').value;
+  const ref = document.getElementById('he-ref').value;
+  const qty = parseInt(document.getElementById('he-qty').value||'0',10);
+  const note = document.getElementById('he-note').value.trim();
+  if(!date){ showToast('Pick a purchase date.'); return; }
+  if(!ref){ showToast('Select an item.'); return; }
+  if(!qty || qty <= 0){ showToast('Enter a quantity greater than zero.'); return; }
+
+  const p = spareParts.find(x=>x.ref === ref);
+  const saveBtn = document.getElementById('save-entry-btn');
+  saveBtn.disabled = true;
+  let entry;
+  try{
+    entry = await dbAddPurchase(ref, date, qty, note);
+  }catch(err){
+    showToast('Could not save — check your connection and try again.');
+    saveBtn.disabled = false;
+    return;
+  }
+  saveBtn.disabled = false;
+  p.purchases.push(entry);
+  renderSpareTable();
+  document.getElementById('he-qty').value='';
+  document.getElementById('he-note').value='';
+  switchHistTab('log');
+  renderHistoryLog();
+  showToast(`+${qty} logged for ${ref}. New Purchase Qty: ${purchaseQty(p).toLocaleString()}.`);
+});
+
+/* bulk purchase log via excel */
+document.getElementById('hist-excel-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('hist-upload-status');
+  if(!file) return;
+  statusEl.className='upload-status'; statusEl.textContent='Reading file…';
+  const reader = new FileReader();
+  reader.onload = async (evt)=>{
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array', cellDates:true});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      let skipped=0;
+      const toAdd = []; // {ref, date, qty, note, part}
+      rows.forEach(r=>{
+        const norm={}; Object.keys(r).forEach(k=>norm[k.trim().toUpperCase()]=r[k]);
+        const ref=String(norm['REF. #']||norm['REF #']||norm['REF']||'').trim();
+        const qty=parseInt(norm['QUANTITY']||norm['QTY']||0,10);
+        let date=norm['DATE']||'';
+        if(date instanceof Date) date=date.toISOString().slice(0,10);
+        else if(date) date=String(date).slice(0,10);
+        const p=spareParts.find(x=>x.ref.toLowerCase()===ref.toLowerCase());
+        if(!p || !qty || qty<=0 || !date){ skipped++; return; }
+        toAdd.push({ref:p.ref, date, qty, note:String(norm['NOTE']||''), part:p});
+      });
+
+      let inserted = [];
+      if(toAdd.length){
+        try{
+          inserted = await dbAddPurchasesBulk(toAdd.map(t=>({ref:t.ref, date:t.date, qty:t.qty, note:t.note})));
+        }catch(err){
+          statusEl.className='upload-status err';
+          statusEl.textContent='Could not save to the database — check your connection and try again.';
+          return;
+        }
+      }
+      inserted.forEach((row, i)=>{
+        toAdd[i].part.purchases.push({id:row.id, date:row.date, qty:row.qty, note:row.note||''});
+      });
+      const added = inserted.length;
+      renderSpareTable();
+      renderHistoryLog();
+      statusEl.className='upload-status ok';
+      statusEl.textContent=`Logged ${added} purchase entr${added===1?'y':'ies'}.`+(skipped?` Skipped ${skipped} (unknown ref, no date, or bad qty).`:'');
+      if(added) showToast(`${added} purchase entr${added===1?'y':'ies'} added to cumulative totals.`);
+    }catch(err){
+      statusEl.className='upload-status err';
+      statusEl.textContent='Could not read that file. Confirm it is a valid .xlsx with a header row.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+});
+
+/* ============================================================
+   ============  REQUISITION MODULE  ==========================
+   ============================================================ */
+
+/* Requester names — admin-defined; populate the "Requested By" dropdown */
+let requesters = [
+  'Md. Rakib Hasan',
+  'Abdul Karim',
+  'Shahin Alam',
+  'Nasima Begum',
+];
+
+/* Submitted requisitions awaiting/holding approval */
+let requisitions = [];
+let reqCounter = 1;
+
+/* Historical log of every part change that reached final Admin approval —
+   powers the Machine History breakdown-frequency analysis */
+let partsHistory = [];
+
+let reqMachine = null;   // the confirmed machine for the current requisition
+let html5Scanner = null; // active camera scanner instance
+
+/* ---------- machine lookup ---------- */
+function findMachineByTrace(raw){
+  const t = String(raw||'').trim().toUpperCase();
+  if(!t) return null;
+  return machines.find(m=>m.trace.toUpperCase() === t) || null;
+}
+
+/* Pull a traceability no out of a scanned QR payload (or a raw code) */
+function parseTraceFromScan(text){
+  if(!text) return '';
+  const line = text.split('\n').find(l=>/^trace|traceability/i.test(l));
+  if(line){
+    const idx = line.indexOf(':');
+    return (idx>=0 ? line.slice(idx+1) : line).trim();
+  }
+  return text.trim();
+}
+
+function showMachineConfirm(m){
+  reqMachine = m;
+  const grid = document.getElementById('mc-grid');
+  const fields = [
+    ['Traceability No.', m.trace],
+    ['Type of Machine', m.type],
+    ['Brand', m.brand],
+    ['Model', m.model],
+    ['Serial No.', m.serial],
+    ['Acquisition Date', m.date ? fmtDate(m.date) : 'N/A'],
+    ['Status', m.status],
+  ];
+  grid.innerHTML = fields.map(([k,v])=>{
+    const cls = k==='Status' ? ' status-'+String(v).toLowerCase() : '';
+    return `<div class="mc-field"><div class="k">${k}</div><div class="v${cls}">${v||'—'}</div></div>`;
+  }).join('');
+  document.getElementById('machine-confirm').classList.remove('hidden');
+  document.getElementById('req-lookup-msg').textContent = '';
+
+  // reveal parts step and seed one row
+  document.getElementById('req-parts-step').classList.remove('hidden');
+  buildPartsOptions();
+  if(document.querySelectorAll('#req-parts-tbody tr').length === 0) addPartRow();
+  updateReqSubmitNote();
+}
+
+function resetRequisition(){
+  reqMachine = null;
+  document.getElementById('req-trace-input').value = '';
+  document.getElementById('req-lookup-msg').textContent = '';
+  document.getElementById('machine-confirm').classList.add('hidden');
+  document.getElementById('req-parts-step').classList.add('hidden');
+  document.getElementById('req-parts-tbody').innerHTML = '';
+}
+
+document.getElementById('req-find-btn').addEventListener('click', ()=>{
+  const m = findMachineByTrace(document.getElementById('req-trace-input').value);
+  if(!m){
+    document.getElementById('req-lookup-msg').textContent = 'No machine found with that traceability number. Check the number and try again.';
+    document.getElementById('machine-confirm').classList.add('hidden');
+    document.getElementById('req-parts-step').classList.add('hidden');
+    return;
+  }
+  showMachineConfirm(m);
+});
+document.getElementById('req-trace-input').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('req-find-btn').click();
+});
+document.getElementById('req-change-machine').addEventListener('click', resetRequisition);
+
+/* ---------- QR scanner ---------- */
+document.getElementById('req-scan-btn').addEventListener('click', ()=>{
+  openModal('scan-modal');
+  document.getElementById('scan-status').textContent = 'Starting camera…';
+  // Give the modal a moment to finish laying out before the scanner measures
+  // its container — starting immediately after unhiding it is a common cause
+  // of camera init failing silently on mobile Safari/Chrome.
+  setTimeout(startScanner, 200);
+});
+
+function acceptScannedTrace(text){
+  const trace = parseTraceFromScan(text);
+  const m = findMachineByTrace(trace);
+  stopScanner();
+  closeModal('scan-modal');
+  if(!m){
+    document.getElementById('req-lookup-msg').textContent = `Scanned "${trace}" but no matching machine is on file.`;
+    return;
+  }
+  document.getElementById('req-trace-input').value = m.trace;
+  showMachineConfirm(m);
+  showToast(`Machine ${m.trace} loaded from QR scan.`);
+}
+
+function startScanner(){
+  if(typeof Html5Qrcode === 'undefined'){
+    document.getElementById('scan-status').textContent = 'Scanner library not loaded. Use the traceability number field below.';
+    return;
+  }
+  if(!window.isSecureContext){
+    document.getElementById('scan-status').textContent = 'Camera requires a secure (https) link — open this app via its hosted https:// address, not a local file.';
+    return;
+  }
+  // Guard against starting a second camera session on top of a running one
+  if(html5Scanner){
+    stopScanner();
+  }
+  html5Scanner = new Html5Qrcode('scan-region');
+
+  // Keep start() itself exactly to the library's documented, textbook
+  // pattern — the first argument only ever accepts a camera id string or a
+  // single-key { facingMode } / { deviceId } object; anything richer than
+  // that (width, height, advanced…) risks the same "exactly 1 key" failure
+  // regardless of which field it's tucked into. Resolution/focus tuning for
+  // small QR tags is applied afterwards via applyVideoConstraints() once the
+  // camera track is actually live — that's the library's documented,
+  // supported way to adjust an already-running camera.
+  const config = {
+    fps: 10,
+    qrbox: (viewfinderWidth, viewfinderHeight)=>{
+      const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.92);
+      return { width: edge, height: edge };
+    },
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+  };
+  const onSuccess = (decodedText)=>acceptScannedTrace(decodedText);
+  const onError = ()=>{}; // fires continuously while no QR is in frame — not a real error
+
+  // Best-effort only: if the browser/device rejects these, scanning still
+  // works fine at whatever resolution it already started at.
+  function boostResolutionForSmallTags(){
+    if(html5Scanner && typeof html5Scanner.applyVideoConstraints === 'function'){
+      try{
+        html5Scanner.applyVideoConstraints({
+          width: { ideal: 3840 },
+          height: { ideal: 2160 },
+          advanced: [{ focusMode: 'continuous' }]
+        }).catch(()=>{});
+      }catch(e){ /* ignore — best effort */ }
+    }
+  }
+
+  html5Scanner.start({ facingMode: 'environment' }, config, onSuccess, onError)
+    .then(()=>{
+      document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
+      boostResolutionForSmallTags();
+    })
+    .catch(err=>{
+      // 'environment' isn't guaranteed to exist/resolve on every device
+      // (iPads/some Android devices, laptop webcams) — fall back to
+      // whatever camera the device actually reports.
+      Html5Qrcode.getCameras().then(cams=>{
+        if(!cams || cams.length === 0){
+          document.getElementById('scan-status').textContent = 'No camera found on this device. Use the field below.';
+          return;
+        }
+        const camId = cams[cams.length - 1].id; // last camera is usually the rear one
+        html5Scanner.start({ deviceId: { exact: camId } }, config, onSuccess, onError)
+          .then(()=>{
+            document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
+            boostResolutionForSmallTags();
+          })
+          .catch(()=>{
+            // last resort — plain camera id, no fanciness at all
+            html5Scanner.start(camId, config, onSuccess, onError)
+              .then(()=>{
+                document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
+                boostResolutionForSmallTags();
+              })
+              .catch(err3=>{
+                document.getElementById('scan-status').textContent =
+                  'Camera could not start (' + (err3?.name || err3 || 'unknown error') + '). Use the field below.';
+              });
+          });
+      }).catch(()=>{
+        document.getElementById('scan-status').textContent =
+          'Camera permission denied or unavailable (' + (err?.name || err || 'unknown error') + '). Use the field below.';
+      });
+    });
+}
+
+function stopScanner(){
+  if(html5Scanner){
+    const s = html5Scanner;
+    html5Scanner = null;
+    s.stop().then(()=>s.clear()).catch(()=>{});
+  }
+}
+
+document.getElementById('scan-close-btn').addEventListener('click', stopScanner);
+document.querySelector('#scan-modal').addEventListener('click', (e)=>{
+  if(e.target.id === 'scan-modal') stopScanner();
+});
+document.getElementById('scan-manual-btn').addEventListener('click', ()=>{
+  const v = document.getElementById('scan-manual-input').value;
+  if(v.trim()) acceptScannedTrace(v);
+});
+
+/* ---------- parts change rows ---------- */
+function partsForMachine(){
+  if(!reqMachine) return [];
+  const type = reqMachine.type.toLowerCase();
+  return spareParts.filter(p=>p.type.toLowerCase() === type);
+}
+
+let itemOptionsHtml = '';
+function buildPartsOptions(){
+  const parts = partsForMachine();
+  itemOptionsHtml = '<option value="">Select item…</option>' +
+    parts.map(p=>`<option value="${p.ref}">${p.item} (${p.ref})</option>`).join('');
+}
+
+function requesterOptionsHtml(){
+  return '<option value="">Select…</option>' + requesters.map(n=>`<option value="${n}">${n}</option>`).join('');
+}
+
+function addPartRow(){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td data-label="Item Name"><select class="req-item-select">${itemOptionsHtml}</select></td>
+    <td data-label="Request Qty"><input type="number" class="req-qty-input" min="1" placeholder="0"></td>
+    <td data-label="Return Available">
+      <select class="req-return-select">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+    </td>
+    <td data-label="Requested By"><select class="req-by-select">${requesterOptionsHtml()}</select></td>
+    <td data-label="Reason for Change"><input type="text" class="req-reason-input" placeholder="e.g. Worn out / broken"></td>
+    <td><button class="req-row-del" title="Remove row">×</button></td>
+  `;
+  document.getElementById('req-parts-tbody').appendChild(tr);
+}
+
+document.getElementById('req-add-part-btn').addEventListener('click', ()=>{ addPartRow(); });
+
+document.getElementById('req-parts-tbody').addEventListener('click', (e)=>{
+  const del = e.target.closest('.req-row-del');
+  if(!del) return;
+  const rows = document.querySelectorAll('#req-parts-tbody tr');
+  if(rows.length <= 1){ showToast('At least one part row is required.'); return; }
+  del.closest('tr').remove();
+  updateReqSubmitNote();
+});
+document.getElementById('req-parts-tbody').addEventListener('input', updateReqSubmitNote);
+document.getElementById('req-parts-tbody').addEventListener('change', updateReqSubmitNote);
+
+function collectPartRows(){
+  const rows = [];
+  document.querySelectorAll('#req-parts-tbody tr').forEach(tr=>{
+    const ref = tr.querySelector('.req-item-select').value;
+    const qty = parseInt(tr.querySelector('.req-qty-input').value||'0',10);
+    const ret = tr.querySelector('.req-return-select').value;
+    const by = tr.querySelector('.req-by-select').value;
+    const reason = tr.querySelector('.req-reason-input').value.trim();
+    const part = spareParts.find(p=>p.ref===ref);
+    rows.push({ref, item: part?part.item:'', qty, returnAvail:ret, requestedBy:by, reason, _tr:tr});
+  });
+  return rows;
+}
+
+function updateReqSubmitNote(){
+  const rows = collectPartRows();
+  const valid = rows.filter(r=>r.ref && r.qty>0 && r.requestedBy);
+  const note = document.getElementById('req-submit-note');
+  if(valid.length === 0){
+    note.textContent = 'Add at least one part with an item, quantity, and requester.';
+  } else {
+    note.textContent = `${valid.length} of ${rows.length} row${rows.length===1?'':'s'} ready to submit.`;
+  }
+}
+
+document.getElementById('req-submit-btn').addEventListener('click', async ()=>{
+  if(!reqMachine){ showToast('Identify a machine first.'); return; }
+  const rows = collectPartRows();
+  // validate each populated row
+  for(const r of rows){
+    if(!r.ref){ showToast('Every row needs an item selected (or remove the empty row).'); return; }
+    if(!r.qty || r.qty<=0){ showToast(`Enter a request quantity for "${r.item}".`); return; }
+    if(!r.requestedBy){ showToast(`Select who is requesting "${r.item}".`); return; }
+  }
+  const clean = rows.map(r=>({ref:r.ref,item:r.item,qty:r.qty,returnAvail:r.returnAvail,requestedBy:r.requestedBy,reason:r.reason}));
+  if(clean.length === 0){ showToast('Add at least one part.'); return; }
+
+  const submitBtn = document.getElementById('req-submit-btn');
+  submitBtn.disabled = true;
+  let reqNo;
+  try{
+    reqNo = await dbNextReqNo();
+    await dbSubmitRequisition(reqNo, reqMachine, clean);
+  }catch(err){
+    showToast('Could not submit — check your connection and try again.');
+    submitBtn.disabled = false;
+    return;
+  }
+  submitBtn.disabled = false;
+
+  requisitions.unshift({
+    reqNo,
+    date: new Date().toISOString(),
+    machine: {...reqMachine},
+    parts: clean,
+    status: 'Pending',          // Pending -> Checker Approved / Checker Rejected -> Approved / On Hold / Denied
+    checkerComment: '',
+    checkerDate: '',
+    adminComment: '',
+    adminDate: '',
+  });
+  updateApprovalsBadge();
+  updateCheckerBadge();
+  showToast(`${reqNo} submitted for checker review (${clean.length} part${clean.length===1?'':'s'}).`);
+  resetRequisition();
+});
+
+/* ---------- requesters (admin) ---------- */
+function populateRequesterDropdowns(){
+  // called on user entry; the row builder reads requesters live
+}
+
+function renderRequesters(){
+  const tb = document.getElementById('requesters-tbody');
+  if(!tb) return;
+  tb.innerHTML = '';
+  if(requesters.length === 0){
+    tb.innerHTML = '<tr class="empty-row"><td colspan="3">No requesters yet. Add the personnel who can raise requisitions.</td></tr>';
+    return;
+  }
+  requesters.forEach((name, i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="sl-cell">${String(i+1).padStart(2,'0')}</td>
+      <td>${name}</td>
+      <td><button class="requester-del" data-name="${name.replace(/"/g,'&quot;')}" title="Remove">×</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+document.getElementById('add-requester-btn').addEventListener('click', async ()=>{
+  const inp = document.getElementById('new-requester-input');
+  const name = inp.value.trim();
+  if(!name){ showToast('Enter a name.'); return; }
+  if(requesters.some(n=>n.toLowerCase()===name.toLowerCase())){ showToast('That name is already listed.'); return; }
+  const addBtn = document.getElementById('add-requester-btn');
+  addBtn.disabled = true;
+  try{
+    await dbAddRequester(name);
+  }catch(err){
+    showToast('Could not save — check your connection and try again.');
+    addBtn.disabled = false;
+    return;
+  }
+  addBtn.disabled = false;
+  requesters.push(name);
+  inp.value='';
+  renderRequesters();
+  showToast(`${name} added to requesters.`);
+});
+document.getElementById('new-requester-input').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter') document.getElementById('add-requester-btn').click();
+});
+document.getElementById('requesters-tbody').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.requester-del');
+  if(!btn) return;
+  const name = btn.dataset.name;
+  btn.disabled = true;
+  try{
+    await dbDeleteRequester(name);
+  }catch(err){
+    showToast('Could not delete — check your connection and try again.');
+    btn.disabled = false;
+    return;
+  }
+  requesters = requesters.filter(n=>n !== name);
+  renderRequesters();
+  showToast('Requester removed.');
+});
+
+/* ---------- shared helpers ---------- */
+function statusClass(status){ return status.toLowerCase().replace(/\s+/g,''); }
+function partsRowsHtml(parts){
+  return parts.map(p=>`
+      <tr>
+        <td data-label="Item Name">${p.item}</td>
+        <td class="ref-cell" data-label="Ref.">${p.ref}</td>
+        <td class="qty-cell" data-label="Req Qty">${p.qty}</td>
+        <td data-label="Return">${p.returnAvail}</td>
+        <td data-label="Requested By">${p.requestedBy}</td>
+        <td data-label="Reason">${p.reason || '—'}</td>
+      </tr>`).join('');
+}
+function reqMetaLine(r){
+  return `${fmtDate(r.date.slice(0,10))} · ${new Date(r.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+}
+function reqMachineLine(r){
+  return `Machine: <b>${r.machine.trace}</b> · ${r.machine.type} · ${r.machine.brand} ${r.machine.model} · SN ${r.machine.serial}`;
+}
+function esc(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
+
+/* Admin final approval → each part's request qty becomes cumulative
+   handover qty for that item; Balance Qty (= Purchase − Handover) in the
+   Spare Parts table recalculates automatically since it's derived live. */
+async function applyHandoverQty(r){
+  for(const p of r.parts){
+    if(!p.ref) continue;
+    await dbIncrementHandover(p.ref, +p.qty||0);
+    const sp = spareParts.find(s=>s.ref===p.ref);
+    if(sp) sp.handover = (+sp.handover||0) + (+p.qty||0);
+  }
+}
+
+/* Recording a final-approved requisition into the machine breakdown log */
+async function logPartsHistory(r){
+  const rows = r.parts.map(p=>({
+    trace: r.machine.trace, type: r.machine.type, brand: r.machine.brand,
+    model: r.machine.model, serial: r.machine.serial, item: p.item, ref: p.ref,
+    qty: p.qty, reason: p.reason || '', requested_by: p.requestedBy,
+    req_no: r.reqNo, date: r.adminDate || new Date().toISOString(),
+  }));
+  await dbLogPartsHistory(rows);
+  rows.forEach(row=>{
+    partsHistory.push({
+      trace: row.trace, type: row.type, brand: row.brand, model: row.model, serial: row.serial,
+      item: row.item, ref: row.ref, qty: row.qty, reason: row.reason,
+      requestedBy: row.requested_by, reqNo: row.req_no, date: row.date,
+    });
+  });
+}
+
+/* ---------- checker queue (checker) ---------- */
+let checkerFilter = 'Pending';
+
+function updateCheckerBadge(){
+  const pending = requisitions.filter(r=>r.status==='Pending').length;
+  const badge = document.getElementById('checker-badge');
+  if(!badge) return;
+  if(pending>0){ badge.style.display=''; badge.textContent = pending; }
+  else badge.style.display='none';
+}
+
+function renderCheckerQueue(){
+  const list = document.getElementById('checker-list');
+  if(!list) return;
+  updateCheckerBadge();
+  document.getElementById('ck-stat-pending').textContent = requisitions.filter(r=>r.status==='Pending').length;
+  document.getElementById('ck-stat-forwarded').textContent = requisitions.filter(r=>r.status!=='Pending' && r.status!=='Checker Rejected').length;
+  document.getElementById('ck-stat-rejected').textContent = requisitions.filter(r=>r.status==='Checker Rejected').length;
+
+  const shown = requisitions.filter(r=> checkerFilter==='all' || r.status===checkerFilter);
+  if(shown.length === 0){
+    list.innerHTML = '<div class="empty-note">Nothing here yet. Requisitions submitted by users appear as soon as they\'re raised.</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(r=>{
+    const actions = r.status==='Pending' ? `
+      <div class="req-decision-box">
+        <label for="ck-comment-${r.reqNo}">Comment (optional)</label>
+        <textarea id="ck-comment-${r.reqNo}" placeholder="Notes for Admin, or reason for rejection…"></textarea>
+        <div class="req-card-actions">
+          <button class="btn rust" data-ck-reject="${r.reqNo}">Reject</button>
+          <button class="btn moss" data-ck-forward="${r.reqNo}">Forward to Admin</button>
+        </div>
+      </div>` : `
+      <div class="req-note-trail">
+        <div class="req-note"><b>Checker:</b> ${r.checkerComment ? esc(r.checkerComment) : (r.status==='Checker Rejected' ? 'Rejected — no comment left.' : 'Forwarded to Admin — no comment left.')}</div>
+        ${r.adminComment ? `<div class="req-note"><b>Admin:</b> ${esc(r.adminComment)}</div>` : ''}
+      </div>`;
+    return `
+      <div class="req-card">
+        <div class="req-card-head">
+          <span class="req-no">${r.reqNo}</span>
+          <span class="req-meta">${reqMetaLine(r)}</span>
+          <span class="req-status ${statusClass(r.status)}">${r.status}</span>
+        </div>
+        <div class="req-card-body">
+          <div class="req-machine-line">${reqMachineLine(r)}</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Item Name</th><th>Ref.</th><th>Req Qty</th><th>Return</th><th>Requested By</th><th>Reason</th></tr></thead>
+              <tbody>${partsRowsHtml(r.parts)}</tbody>
+            </table>
+          </div>
+          ${actions}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('ck-filter-tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip-tab');
+  if(!btn) return;
+  checkerFilter = btn.dataset.ckf;
+  document.querySelectorAll('#ck-filter-tabs .chip-tab').forEach(b=>b.classList.toggle('active', b===btn));
+  renderCheckerQueue();
+});
+
+document.getElementById('checker-list').addEventListener('click', async (e)=>{
+  const fw = e.target.closest('[data-ck-forward]');
+  const rj = e.target.closest('[data-ck-reject]');
+  if(fw){
+    const r = requisitions.find(x=>x.reqNo===fw.dataset.ckForward);
+    if(r){
+      const comment = document.getElementById(`ck-comment-${r.reqNo}`).value.trim();
+      const nowIso = new Date().toISOString();
+      fw.disabled = true;
+      try{
+        await dbUpdateRequisition(r.reqNo, { status:'Checker Approved', checker_comment:comment, checker_date:nowIso });
+      }catch(err){
+        showToast('Could not save — check your connection and try again.');
+        fw.disabled = false;
+        return;
+      }
+      r.checkerComment = comment;
+      r.checkerDate = nowIso;
+      r.status = 'Checker Approved';
+      renderCheckerQueue();
+      updateApprovalsBadge();
+      showToast(`${r.reqNo} forwarded to Admin for final approval.`);
+    }
+  } else if(rj){
+    const r = requisitions.find(x=>x.reqNo===rj.dataset.ckReject);
+    if(r){
+      const comment = document.getElementById(`ck-comment-${r.reqNo}`).value.trim();
+      const nowIso = new Date().toISOString();
+      rj.disabled = true;
+      try{
+        await dbUpdateRequisition(r.reqNo, { status:'Checker Rejected', checker_comment:comment, checker_date:nowIso });
+      }catch(err){
+        showToast('Could not save — check your connection and try again.');
+        rj.disabled = false;
+        return;
+      }
+      r.checkerComment = comment;
+      r.checkerDate = nowIso;
+      r.status = 'Checker Rejected';
+      renderCheckerQueue();
+      showToast(`${r.reqNo} rejected at checker stage.`);
+    }
+  }
+});
+
+/* ---------- approvals (admin, final decision) ---------- */
+let approvalFilter = 'all';
+const ADMIN_ACTIONABLE = ['Checker Approved','On Hold'];
+
+function updateApprovalsBadge(){
+  const pending = requisitions.filter(r=>ADMIN_ACTIONABLE.includes(r.status)).length;
+  const badge = document.getElementById('approvals-badge');
+  if(!badge) return;
+  if(pending>0){ badge.style.display=''; badge.textContent = pending; }
+  else badge.style.display='none';
+}
+
+function renderApprovals(){
+  const list = document.getElementById('approvals-list');
+  if(!list) return;
+  updateApprovalsBadge();
+  document.getElementById('ap-stat-pending').textContent = requisitions.filter(r=>r.status==='Checker Approved').length;
+  document.getElementById('ap-stat-hold').textContent = requisitions.filter(r=>r.status==='On Hold').length;
+  document.getElementById('ap-stat-approved').textContent = requisitions.filter(r=>r.status==='Approved').length;
+  document.getElementById('ap-stat-rejected').textContent = requisitions.filter(r=>r.status==='Denied').length;
+
+  // requisitions still awaiting the checker aren't actionable here yet
+  const visible = requisitions.filter(r=>r.status!=='Pending');
+  const shown = visible.filter(r=> approvalFilter==='all' || r.status===approvalFilter);
+  if(shown.length === 0){
+    list.innerHTML = '<div class="empty-note">Nothing here yet. Requisitions appear once a Checker has forwarded or rejected them.</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(r=>{
+    const trail = `
+      <div class="req-note-trail">
+        <div class="req-note"><b>Checker:</b> ${r.checkerComment ? esc(r.checkerComment) : (r.status==='Checker Rejected' ? 'Rejected — no comment left.' : 'No comment left.')}</div>
+        ${r.adminComment ? `<div class="req-note"><b>Admin:</b> ${esc(r.adminComment)}</div>` : ''}
+      </div>`;
+    const actions = ADMIN_ACTIONABLE.includes(r.status) ? `
+      <div class="req-decision-box">
+        <label for="ap-comment-${r.reqNo}">Comment (optional)</label>
+        <textarea id="ap-comment-${r.reqNo}" placeholder="Reason for hold/denial, or approval notes…">${r.adminComment||''}</textarea>
+        <div class="req-card-actions">
+          <button class="btn rust" data-deny="${r.reqNo}">Deny</button>
+          <button class="btn slate" data-hold="${r.reqNo}">Hold</button>
+          <button class="btn moss" data-approve="${r.reqNo}">Approve</button>
+        </div>
+      </div>` : '';
+    return `
+      <div class="req-card">
+        <div class="req-card-head">
+          <span class="req-no">${r.reqNo}</span>
+          <span class="req-meta">${reqMetaLine(r)}</span>
+          <span class="req-status ${statusClass(r.status)}">${r.status}</span>
+        </div>
+        <div class="req-card-body">
+          <div class="req-machine-line">${reqMachineLine(r)}</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Item Name</th><th>Ref.</th><th>Req Qty</th><th>Return</th><th>Requested By</th><th>Reason</th></tr></thead>
+              <tbody>${partsRowsHtml(r.parts)}</tbody>
+            </table>
+          </div>
+          ${trail}
+          ${actions}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('ap-filter-tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip-tab');
+  if(!btn) return;
+  approvalFilter = btn.dataset.apf;
+  document.querySelectorAll('#ap-filter-tabs .chip-tab').forEach(b=>b.classList.toggle('active', b===btn));
+  renderApprovals();
+});
+
+document.getElementById('approvals-list').addEventListener('click', async (e)=>{
+  const ap = e.target.closest('[data-approve]');
+  const hd = e.target.closest('[data-hold]');
+  const dn = e.target.closest('[data-deny]');
+  const btn = ap || hd || dn;
+  const reqNo = ap?.dataset.approve || hd?.dataset.hold || dn?.dataset.deny;
+  if(!reqNo) return;
+  const r = requisitions.find(x=>x.reqNo===reqNo);
+  if(!r) return;
+  const commentBox = document.getElementById(`ap-comment-${reqNo}`);
+  const adminComment = commentBox ? commentBox.value.trim() : r.adminComment;
+  const nowIso = new Date().toISOString();
+
+  btn.disabled = true;
+  if(ap){
+    try{
+      // Mark the requisition Approved first — if a later step fails, the
+      // requisition still shows Approved (rather than risking a re-click
+      // that would double-log history / double-count stock).
+      await dbUpdateRequisition(reqNo, { status:'Approved', admin_comment:adminComment, admin_date:nowIso });
+      r.adminComment = adminComment; r.adminDate = nowIso; r.status = 'Approved';
+      await logPartsHistory(r);
+      await applyHandoverQty(r);
+      renderMachineHistory();
+      renderSpareTable();
+      showToast(`${r.reqNo} approved — logged to machine history, handover qty updated.`);
+    }catch(err){
+      showToast(`${r.reqNo} was marked Approved, but saving the history/stock update failed — check Machine History and Spare Parts, and adjust manually if needed.`);
+      btn.disabled = false;
+    }
+  } else if(hd){
+    try{
+      await dbUpdateRequisition(reqNo, { status:'On Hold', admin_comment:adminComment, admin_date:nowIso });
+      r.adminComment = adminComment; r.adminDate = nowIso; r.status = 'On Hold';
+      showToast(`${r.reqNo} put on hold.`);
+    }catch(err){
+      showToast('Could not save — check your connection and try again.');
+      btn.disabled = false;
+    }
+  } else if(dn){
+    try{
+      await dbUpdateRequisition(reqNo, { status:'Denied', admin_comment:adminComment, admin_date:nowIso });
+      r.adminComment = adminComment; r.adminDate = nowIso; r.status = 'Denied';
+      showToast(`${r.reqNo} denied.`);
+    }catch(err){
+      showToast('Could not save — check your connection and try again.');
+      btn.disabled = false;
+    }
+  }
+  renderApprovals();
+});
+
+/* ---------- machine history (admin) — breakdown frequency analysis ---------- */
+let mhOpen = null; // trace of currently expanded card
+const mhSearchInput = document.getElementById('mh-search-input');
+
+function renderMachineHistory(){
+  const list = document.getElementById('machine-history-list');
+  if(!list) return;
+
+  const term = (mhSearchInput?.value || '').trim().toLowerCase();
+
+  document.getElementById('mh-stat-events').textContent = partsHistory.length;
+  const distinctMachines = new Set(partsHistory.map(h=>h.trace));
+  document.getElementById('mh-stat-machines').textContent = distinctMachines.size;
+  document.getElementById('mh-stat-avg').textContent = distinctMachines.size
+    ? (partsHistory.length / distinctMachines.size).toFixed(1) : '0';
+
+  if(partsHistory.length === 0){
+    list.innerHTML = '<div class="empty-note">No history yet. Once Admin gives final approval on a requisition, its part changes are logged here against the machine.</div>';
+    return;
+  }
+
+  // group by machine trace
+  const groups = {};
+  partsHistory.forEach(h=>{
+    if(!groups[h.trace]) groups[h.trace] = { info: h, events: [] };
+    groups[h.trace].events.push(h);
+  });
+
+  let rows = Object.values(groups).sort((a,b)=>b.events.length - a.events.length);
+
+  if(term){
+    rows = rows.filter(g=>{
+      const hay = `${g.info.trace} ${g.info.brand} ${g.info.model} ${g.info.type}`.toLowerCase();
+      return hay.includes(term);
+    });
+  }
+
+  if(rows.length === 0){
+    list.innerHTML = '<div class="empty-note">No machines match that search.</div>';
+    return;
+  }
+
+  const maxCount = Math.max(...rows.map(g=>g.events.length));
+
+  list.innerHTML = rows.map(g=>{
+    const count = g.events.length;
+    const pct = Math.round((count / maxCount) * 100);
+    const tier = count >= Math.ceil(maxCount*0.66) ? '' : (count >= Math.ceil(maxCount*0.33) ? 'mid' : 'low');
+    const isOpen = mhOpen === g.info.trace;
+    const detailRows = g.events
+      .slice()
+      .sort((a,b)=> new Date(b.date) - new Date(a.date))
+      .map(ev=>`
+        <tr>
+          <td>${fmtDate(ev.date.slice(0,10))}</td>
+          <td>${ev.item}</td>
+          <td class="ref-cell">${ev.ref}</td>
+          <td class="qty-cell">${ev.qty}</td>
+          <td>${ev.reason || '—'}</td>
+          <td>${ev.requestedBy}</td>
+          <td class="ref-cell">${ev.reqNo}</td>
+        </tr>`).join('');
+    return `
+      <div class="mh-card">
+        <div class="mh-head" data-mh-toggle="${g.info.trace}">
+          <span class="mh-trace">${g.info.trace}</span>
+          <span class="mh-meta">${g.info.type} · ${g.info.brand} ${g.info.model} · SN ${g.info.serial}</span>
+          <span class="mh-count ${tier}">${count} change${count===1?'':'s'}</span>
+          <div class="mh-bar-track"><div class="mh-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="mh-body ${isOpen?'open':''}" id="mh-body-${g.info.trace}">
+          <div class="table-wrap" style="margin-top:12px;">
+            <table>
+              <thead><tr><th>Date</th><th>Item</th><th>Ref.</th><th>Qty</th><th>Reason</th><th>Requested By</th><th>Req No.</th></tr></thead>
+              <tbody>${detailRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('machine-history-list').addEventListener('click', (e)=>{
+  const head = e.target.closest('[data-mh-toggle]');
+  if(!head) return;
+  const trace = head.dataset.mhToggle;
+  mhOpen = (mhOpen === trace) ? null : trace;
+  renderMachineHistory();
+});
+
+if(mhSearchInput){
+  mhSearchInput.addEventListener('input', renderMachineHistory);
+}
+
+/* ============================================================
+   REPORTS
+   ============================================================ */
+function computeServiceLength(dateStr){
+  if(!dateStr) return 'N/A';
+  const start = new Date(dateStr);
+  if(isNaN(start)) return 'N/A';
+  const now = new Date();
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  if(now.getDate() < start.getDate()) months--;
+  if(months < 0){ years--; months += 12; }
+  if(years < 0) return 'N/A';
+  const parts = [];
+  if(years > 0) parts.push(`${years} yr${years===1?'':'s'}`);
+  parts.push(`${months} mo${months===1?'':'s'}`);
+  return parts.join(' ');
+}
+
+/* ---------- Report 1: Machine Inventory ---------- */
+let rmiStatusFilter = 'all';
+
+function populateRmiTypeFilter(){
+  const sel = document.getElementById('rmi-type-filter');
+  const current = sel.value;
+  const types = [...new Set(machines.map(m=>m.type))].sort();
+  sel.innerHTML = '<option value="all">All machine types</option>' + types.map(t=>`<option value="${esc(t)}">${t}</option>`).join('');
+  if(types.includes(current)) sel.value = current;
+}
+
+function rmiFilteredRows(){
+  const typeVal = document.getElementById('rmi-type-filter').value || 'all';
+  return machines.filter(m=>{
+    if(typeVal !== 'all' && m.type !== typeVal) return false;
+    if(rmiStatusFilter !== 'all' && m.status !== rmiStatusFilter) return false;
+    return true;
+  });
+}
+
+function renderReportMachineInventory(){
+  populateRmiTypeFilter();
+  document.getElementById('rmi-report-date').textContent = fmtDate(new Date().toISOString().slice(0,10));
+  const rows = rmiFilteredRows();
+
+  document.getElementById('rmi-stat-total').textContent = rows.length;
+  document.getElementById('rmi-stat-active').textContent = rows.filter(m=>m.status==='Active').length;
+  document.getElementById('rmi-stat-inactive').textContent = rows.filter(m=>m.status==='Inactive').length;
+
+  const body = document.getElementById('rmi-report-body');
+  if(rows.length === 0){
+    body.innerHTML = '<div class="empty-note">No machines match this filter.</div>';
+    return;
+  }
+
+  const groups = {};
+  rows.forEach(m=>{ (groups[m.type] = groups[m.type] || []).push(m); });
+
+  body.innerHTML = Object.keys(groups).sort().map(type=>{
+    const list = groups[type];
+    const trs = list.map(m=>`
+      <tr>
+        <td>${m.sl}</td>
+        <td>${m.type}</td>
+        <td class="ref-cell">${m.trace}</td>
+        <td>${fmtDate(m.date)}</td>
+        <td>${m.brand}</td>
+        <td>${m.model}</td>
+        <td>${m.serial}</td>
+        <td><span class="svc-badge">${computeServiceLength(m.date)}</span></td>
+      </tr>`).join('');
+    return `
+      <div class="rep-group-head">${type} · ${list.length} unit${list.length===1?'':'s'}</div>
+      <div class="table-wrap" style="margin-bottom:14px;">
+        <table>
+          <thead><tr><th>SL No.</th><th>Type of Machine</th><th>Traceability No.</th><th>Acquisition Date</th><th>Brand</th><th>Model</th><th>Serial No.</th><th>Service Length</th></tr></thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('rmi-type-filter').addEventListener('change', renderReportMachineInventory);
+document.getElementById('rmi-status-tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip-tab');
+  if(!btn) return;
+  rmiStatusFilter = btn.dataset.rmis;
+  document.querySelectorAll('#rmi-status-tabs .chip-tab').forEach(b=>b.classList.toggle('active', b===btn));
+  renderReportMachineInventory();
+});
+document.getElementById('rmi-print-btn').addEventListener('click', ()=>{
+  const rows = rmiFilteredRows();
+  const trs = rows.map(m=>`
+    <tr><td>${m.sl}</td><td>${m.type}</td><td>${m.trace}</td><td>${fmtDate(m.date)}</td><td>${m.brand}</td><td>${m.model}</td><td>${m.serial}</td><td>${computeServiceLength(m.date)}</td></tr>`).join('');
+  const html = `
+    <div class="company">SGWICUS (BD) Limited — Mechanics Dept.</div>
+    <h2 style="margin:4px 0 2px;">Machine Inventory Report</h2>
+    <p style="margin:0 0 14px;font-size:12px;">Generated ${fmtDate(new Date().toISOString().slice(0,10))} · ${rows.length} machine(s)</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:11px;">
+      <thead><tr><th>SL No.</th><th>Type of Machine</th><th>Traceability No.</th><th>Acq. Date</th><th>Brand</th><th>Model</th><th>Serial No.</th><th>Service Length</th></tr></thead>
+      <tbody>${trs || '<tr><td colspan="8">No records.</td></tr>'}</tbody>
+    </table>`;
+  openPrintWindow('Machine Inventory Report', html);
+});
+
+/* ---------- Report 2: Spare Parts Inventory (by machine type, item-wise usage) ---------- */
+let rspOpenRef = null;
+
+function populateRspTypeFilter(){
+  const sel = document.getElementById('rsp-type-filter');
+  const current = sel.value;
+  const types = [...new Set(spareParts.map(p=>p.type))].sort();
+  sel.innerHTML = '<option value="all">All machine types</option>' + types.map(t=>`<option value="${esc(t)}">${t}</option>`).join('');
+  if(types.includes(current)) sel.value = current;
+}
+
+function rspFilteredItems(){
+  const typeVal = document.getElementById('rsp-type-filter').value || 'all';
+  return spareParts.filter(p=> typeVal==='all' || p.type===typeVal);
+}
+
+function renderReportSpareParts(){
+  populateRspTypeFilter();
+  const items = rspFilteredItems();
+  const refSet = new Set(items.map(p=>p.ref));
+  const events = partsHistory.filter(h=>refSet.has(h.ref));
+
+  document.getElementById('rsp-stat-items').textContent = items.length;
+  document.getElementById('rsp-stat-events').textContent = events.length;
+
+  const body = document.getElementById('rsp-report-body');
+  if(items.length === 0){
+    body.innerHTML = '<div class="empty-note">No spare parts registered for this machine type.</div>';
+    return;
+  }
+
+  body.innerHTML = items.map(p=>{
+    const pq = purchaseQty(p);
+    const bal = balanceQty(p);
+    const evs = partsHistory.filter(h=>h.ref===p.ref).sort((a,b)=> new Date(b.date) - new Date(a.date));
+    const isOpen = rspOpenRef === p.ref;
+    const detailRows = evs.length ? evs.map(ev=>`
+      <tr>
+        <td>${fmtDate(ev.date.slice(0,10))}</td>
+        <td class="ref-cell">${ev.trace}</td>
+        <td class="qty-cell">${ev.qty}</td>
+        <td>${ev.requestedBy}</td>
+        <td class="ref-cell">${ev.reqNo}</td>
+      </tr>`).join('') : `<tr><td colspan="5" class="mh-empty-cell">No usage recorded yet.</td></tr>`;
+    const tier = evs.length === 0 ? 'low' : '';
+    return `
+      <div class="mh-card">
+        <div class="mh-head" data-rsp-toggle="${p.ref}">
+          <span class="mh-trace">${p.item}</span>
+          <span class="mh-meta">Ref ${p.ref} · Purchased ${pq} · Handover ${p.handover} · Balance ${bal}</span>
+          <span class="mh-count ${tier}">${evs.length} use${evs.length===1?'':'s'}</span>
+        </div>
+        <div class="mh-body ${isOpen?'open':''}" id="rsp-body-${p.ref}">
+          <div class="table-wrap" style="margin-top:12px;">
+            <table>
+              <thead><tr><th>Date</th><th>Machine</th><th>Qty</th><th>Requested By</th><th>Req No.</th></tr></thead>
+              <tbody>${detailRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('rsp-type-filter').addEventListener('change', renderReportSpareParts);
+document.getElementById('rsp-report-body').addEventListener('click', (e)=>{
+  const head = e.target.closest('[data-rsp-toggle]');
+  if(!head) return;
+  const ref = head.dataset.rspToggle;
+  rspOpenRef = (rspOpenRef === ref) ? null : ref;
+  renderReportSpareParts();
+});
+document.getElementById('rsp-print-btn').addEventListener('click', ()=>{
+  const items = rspFilteredItems();
+  const typeVal = document.getElementById('rsp-type-filter').value || 'all';
+  const trs = items.map(p=>{
+    const pq = purchaseQty(p);
+    const bal = balanceQty(p);
+    const used = partsHistory.filter(h=>h.ref===p.ref).length;
+    return `<tr><td>${p.sl}</td><td>${p.item}</td><td>${p.ref}</td><td>${pq}</td><td>${p.handover}</td><td>${bal}</td><td>${used}</td></tr>`;
+  }).join('');
+  const html = `
+    <div class="company">SGWICUS (BD) Limited — Mechanics Dept.</div>
+    <h2 style="margin:4px 0 2px;">Spare Parts Inventory Report</h2>
+    <p style="margin:0 0 14px;font-size:12px;">Machine type: ${typeVal==='all' ? 'All types' : typeVal} · Generated ${fmtDate(new Date().toISOString().slice(0,10))}</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:11px;">
+      <thead><tr><th>SL</th><th>Item</th><th>Ref.</th><th>Purchase Qty</th><th>Handover Qty</th><th>Balance Qty</th><th>Times Used</th></tr></thead>
+      <tbody>${trs || '<tr><td colspan="7">No records.</td></tr>'}</tbody>
+    </table>`;
+  openPrintWindow('Spare Parts Inventory Report', html);
+});
+
+/* ---------- Report 3: Breakdown History (period-bucketed, single machine) ---------- */
+let rbhPeriod = 'month';
+
+function populateRbhMachineFilter(){
+  const sel = document.getElementById('rbh-machine-filter');
+  const current = sel.value;
+  const sorted = machines.slice().sort((a,b)=>a.trace.localeCompare(b.trace));
+  sel.innerHTML = '<option value="">Select a machine…</option>' +
+    sorted.map(m=>`<option value="${esc(m.trace)}">${m.trace} — ${m.type}</option>`).join('');
+  if(current) sel.value = current;
+}
+
+function periodKey(dateStr, period){
+  const d = new Date(dateStr);
+  const y = d.getFullYear(), m = d.getMonth();
+  if(period === 'month') return `${y}-${String(m+1).padStart(2,'0')}`;
+  if(period === 'quarter') return `${y}-Q${Math.floor(m/3)+1}`;
+  if(period === 'half') return `${y}-H${m<6?1:2}`;
+  return `${y}`;
+}
+function periodLabel(key, period){
+  if(period === 'month'){
+    const [y,m] = key.split('-');
+    return new Date(+y, +m-1, 1).toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+  }
+  if(period === 'quarter'){ const [y,q] = key.split('-Q'); return `Q${q} ${y}`; }
+  if(period === 'half'){ const [y,h] = key.split('-H'); return `H${h} ${y}`; }
+  return key;
+}
+function rbhBuckets(trace, period){
+  const events = partsHistory.filter(h=>h.trace===trace);
+  const buckets = {};
+  events.forEach(ev=>{
+    const key = periodKey(ev.date, period);
+    (buckets[key] = buckets[key] || []).push(ev);
+  });
+  return buckets;
+}
+
+function renderReportBreakdownHistory(){
+  populateRbhMachineFilter();
+  const trace = document.getElementById('rbh-machine-filter').value;
+  const body = document.getElementById('rbh-report-body');
+  if(!trace){
+    body.innerHTML = '<div class="empty-note">Select a machine above to see its breakdown history.</div>';
+    return;
+  }
+  const buckets = rbhBuckets(trace, rbhPeriod);
+  const keys = Object.keys(buckets).sort().reverse();
+  if(keys.length === 0){
+    body.innerHTML = '<div class="empty-note">No approved part changes recorded yet for this machine.</div>';
+    return;
+  }
+  const rows = keys.map(key=>{
+    const evs = buckets[key];
+    const items = evs.map(e=>`${e.item} (x${e.qty})`).join(', ');
+    return `<tr><td>${periodLabel(key, rbhPeriod)}</td><td class="qty-cell">${evs.length}</td><td>${items}</td></tr>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Period</th><th>Parts Changed</th><th>Items</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+document.getElementById('rbh-machine-filter').addEventListener('change', renderReportBreakdownHistory);
+document.getElementById('rbh-period-tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip-tab');
+  if(!btn) return;
+  rbhPeriod = btn.dataset.rbhp;
+  document.querySelectorAll('#rbh-period-tabs .chip-tab').forEach(b=>b.classList.toggle('active', b===btn));
+  renderReportBreakdownHistory();
+});
+document.getElementById('rbh-print-btn').addEventListener('click', ()=>{
+  const trace = document.getElementById('rbh-machine-filter').value;
+  if(!trace){ showToast('Select a machine first.'); return; }
+  const m = machines.find(x=>x.trace===trace);
+  const buckets = rbhBuckets(trace, rbhPeriod);
+  const keys = Object.keys(buckets).sort().reverse();
+  const rows = keys.map(key=>{
+    const evs = buckets[key];
+    const items = evs.map(e=>`${e.item} (x${e.qty})`).join(', ');
+    return `<tr><td>${periodLabel(key, rbhPeriod)}</td><td>${evs.length}</td><td>${items}</td></tr>`;
+  }).join('');
+  const periodName = {month:'Monthly',quarter:'Quarterly',half:'Half-Yearly',year:'Annually'}[rbhPeriod];
+  const html = `
+    <div class="company">SGWICUS (BD) Limited — Mechanics Dept.</div>
+    <h2 style="margin:4px 0 2px;">Breakdown History Report</h2>
+    <p style="margin:0 0 14px;font-size:12px;">Machine: ${trace} · ${m ? m.type : ''} · Grouping: ${periodName} · Generated ${fmtDate(new Date().toISOString().slice(0,10))}</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:11px;">
+      <thead><tr><th>Period</th><th>Parts Changed</th><th>Items</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="3">No records.</td></tr>'}</tbody>
+    </table>`;
+  openPrintWindow('Breakdown History Report', html);
+});
+
+/* ---------- Report 4: QR Code Generator (type-wise / traceability-wise) ---------- */
+let rqrSelectedTrace = null;
+
+function populateRqrTypeFilter(){
+  const typeSel = document.getElementById('rqr-type-filter');
+  const curType = typeSel.value;
+  const types = [...new Set(machines.map(m=>m.type))].sort();
+  typeSel.innerHTML = '<option value="">Select a machine type…</option>' + types.map(t=>`<option value="${esc(t)}">${t}</option>`).join('');
+  if(types.includes(curType)) typeSel.value = curType;
+}
+
+function renderRqrTypePreview(){
+  const typeVal = document.getElementById('rqr-type-filter').value;
+  const holder = document.getElementById('rqr-type-preview');
+  if(!typeVal){ holder.innerHTML = '<div class="empty-note">Select a machine type above to preview its QR tags.</div>'; return; }
+  const list = machines.filter(m=>m.type===typeVal);
+  if(list.length === 0){ holder.innerHTML = '<div class="empty-note">No machines of this type.</div>'; return; }
+  holder.innerHTML = `<div class="rqr-grid">` + list.map(m=>{
+    const dataUrl = generateQrDataUrl(qrPayload(m), 110);
+    return `<div class="rqr-cell"><img src="${dataUrl}" width="90" height="90" alt="QR"><div class="rqr-trace">${m.trace}</div></div>`;
+  }).join('') + `</div>`;
+}
+
+function renderRqrTraceResults(){
+  const q = document.getElementById('rqr-trace-search').value.trim().toLowerCase();
+  const holder = document.getElementById('rqr-trace-results');
+  if(!q){ holder.innerHTML = ''; return; }
+  const matches = machines.filter(m=>{
+    return [m.trace, m.type, m.brand, m.model, m.serial].join(' ').toLowerCase().includes(q);
+  }).slice(0, 20);
+  if(matches.length === 0){
+    holder.innerHTML = '<div class="empty-note" style="max-width:480px;">No machine matches that search.</div>';
+    return;
+  }
+  holder.innerHTML = matches.map(m=>`
+    <div class="rqr-result-item" data-rqr-pick="${esc(m.trace)}">
+      <span class="t">${m.trace}</span>
+      <span class="m">${m.type} · ${m.brand} ${m.model}</span>
+    </div>`).join('');
+}
+
+function selectRqrTrace(trace){
+  rqrSelectedTrace = trace;
+  document.getElementById('rqr-trace-search').value = trace;
+  document.getElementById('rqr-trace-results').innerHTML = '';
+  renderRqrTracePreview();
+}
+
+function renderRqrTracePreview(){
+  const holder = document.getElementById('rqr-trace-preview');
+  if(!rqrSelectedTrace){ holder.innerHTML = '<div class="empty-note">Search and select a machine above to preview its QR tag.</div>'; return; }
+  const m = machines.find(x=>x.trace===rqrSelectedTrace);
+  if(!m){ holder.innerHTML = '<div class="empty-note">Machine not found.</div>'; rqrSelectedTrace = null; return; }
+  const dataUrl = generateQrDataUrl(qrPayload(m), 168);
+  holder.innerHTML = `
+    <div class="qr-tag">
+      <div class="qr-eyelet"></div>
+      <div class="qr-canvas-holder"><img src="${dataUrl}" width="168" height="168" alt="QR code for ${m.trace}"></div>
+      <div class="qr-trace">${m.trace}</div>
+      <div class="qr-companyline">SGWICUS (BD) Limited</div>
+    </div>`;
+}
+
+function renderReportQr(){
+  populateRqrTypeFilter();
+  renderRqrTypePreview();
+  renderRqrTraceResults();
+  renderRqrTracePreview();
+  renderRqrCustomPreview();
+}
+
+document.querySelectorAll('.rqr-tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.rqr-tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    const tab = btn.dataset.qrtab;
+    document.getElementById('rqr-panel-type').classList.toggle('hidden', tab !== 'type');
+    document.getElementById('rqr-panel-trace').classList.toggle('hidden', tab !== 'trace');
+    document.getElementById('rqr-panel-custom').classList.toggle('hidden', tab !== 'custom');
+  });
+});
+
+document.getElementById('rqr-type-filter').addEventListener('change', renderRqrTypePreview);
+document.getElementById('rqr-trace-search').addEventListener('input', renderRqrTraceResults);
+document.getElementById('rqr-trace-results').addEventListener('click', (e)=>{
+  const item = e.target.closest('[data-rqr-pick]');
+  if(!item) return;
+  selectRqrTrace(item.dataset.rqrPick);
+});
+
+document.getElementById('rqr-type-print-btn').addEventListener('click', ()=>{
+  const typeVal = document.getElementById('rqr-type-filter').value;
+  if(!typeVal){ showToast('Select a machine type first.'); return; }
+  const list = machines.filter(m=>m.type===typeVal);
+  if(list.length === 0){ showToast('No machines of this type to print.'); return; }
+  const cells = list.map(m=>{
+    const dataUrl = generateQrDataUrl(qrPayload(m), 140);
+    return `
+      <div style="border:1px solid #999;border-radius:3px;padding:4mm 2mm 3mm;text-align:center;break-inside:avoid;">
+        <img src="${dataUrl}" width="70" height="70" style="margin-bottom:2mm;" alt="QR">
+        <div style="font-weight:700;font-size:9.5pt;letter-spacing:.03em;">${m.trace}</div>
+      </div>`;
+  }).join('');
+  openPrintWindow(`QR Sheet — ${typeVal}`, `
+    <div style="padding:14mm;">
+      <div class="company" style="text-align:center;font-size:16px;margin-bottom:4px;">SGWICUS (BD) Limited — Machine QR Register</div>
+      <div style="text-align:center;font-size:9pt;color:#555;margin-bottom:8mm;">
+        ${typeVal} · ${list.length} tag${list.length===1?'':'s'} · Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6mm 4mm;">${cells}</div>
+    </div>
+  `);
+});
+
+document.getElementById('rqr-trace-print-btn').addEventListener('click', ()=>{
+  if(!rqrSelectedTrace){ showToast('Search and select a machine first.'); return; }
+  const m = machines.find(x=>x.trace===rqrSelectedTrace);
+  if(!m) return;
+  const dataUrl = generateQrDataUrl(qrPayload(m), 260);
+  openPrintWindow(`Machine Tag — ${m.trace}`, `
+    <div style="text-align:center;padding:34px 20px;">
+      <div class="company" style="font-size:13px;margin-bottom:22px;">SGWICUS (BD) Limited — Mechanics Dept.</div>
+      <img src="${dataUrl}" width="260" height="260" alt="QR code">
+      <div style="font-weight:700;font-size:22px;letter-spacing:.05em;margin-top:16px;">${m.trace}</div>
+    </div>
+  `);
+});
+
+/* ---------- Report 4c: QR Code Generator — custom list of trace numbers ---------- */
+function parseCustomTraceInput(raw){
+  return raw.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+}
+
+/* Matches the pasted list against the machine register, de-duping repeats
+   and separating what matched from what didn't so the admin can fix typos. */
+function matchCustomTraces(){
+  const raw = document.getElementById('rqr-custom-input').value;
+  const wanted = parseCustomTraceInput(raw);
+  const seen = new Set();
+  const matched = [];
+  const notFound = [];
+  wanted.forEach(w=>{
+    const key = w.toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    const m = machines.find(x=>x.trace.toLowerCase() === key);
+    if(m) matched.push(m); else notFound.push(w);
+  });
+  return { matched, notFound };
+}
+
+function renderRqrCustomPreview(){
+  const holder = document.getElementById('rqr-custom-preview');
+  const statusEl = document.getElementById('rqr-custom-status');
+  const raw = document.getElementById('rqr-custom-input').value.trim();
+  if(!raw){
+    holder.innerHTML = '<div class="empty-note">Paste or type traceability numbers above, then Generate.</div>';
+    statusEl.textContent = '';
+    return;
+  }
+  const { matched, notFound } = matchCustomTraces();
+  if(matched.length === 0){
+    holder.innerHTML = '<div class="empty-note">None of those traceability numbers matched a machine on file.</div>';
+    statusEl.textContent = notFound.length ? `Not found: ${notFound.join(', ')}` : '';
+    return;
+  }
+  statusEl.innerHTML = `<b>${matched.length}</b> matched` + (notFound.length ? ` · not found: ${esc(notFound.join(', '))}` : '');
+  holder.innerHTML = `<div class="rqr-grid">` + matched.map(m=>{
+    const dataUrl = generateQrDataUrl(qrPayload(m), 110);
+    return `<div class="rqr-cell"><img src="${dataUrl}" width="90" height="90" alt="QR"><div class="rqr-trace">${m.trace}</div></div>`;
+  }).join('') + `</div>`;
+}
+
+document.getElementById('rqr-custom-generate-btn').addEventListener('click', renderRqrCustomPreview);
+
+document.getElementById('rqr-custom-print-btn').addEventListener('click', ()=>{
+  const { matched, notFound } = matchCustomTraces();
+  if(matched.length === 0){ showToast('Enter at least one matching traceability number first.'); return; }
+  const cells = matched.map(m=>{
+    const dataUrl = generateQrDataUrl(qrPayload(m), 140);
+    return `
+      <div style="border:1px solid #999;border-radius:3px;padding:4mm 2mm 3mm;text-align:center;break-inside:avoid;">
+        <img src="${dataUrl}" width="70" height="70" style="margin-bottom:2mm;" alt="QR">
+        <div style="font-weight:700;font-size:9.5pt;letter-spacing:.03em;">${m.trace}</div>
+      </div>`;
+  }).join('');
+  openPrintWindow(`QR Sheet — Custom List`, `
+    <div style="padding:14mm;">
+      <div class="company" style="text-align:center;font-size:16px;margin-bottom:4px;">SGWICUS (BD) Limited — Machine QR Register</div>
+      <div style="text-align:center;font-size:9pt;color:#555;margin-bottom:8mm;">
+        Custom list · ${matched.length} tag${matched.length===1?'':'s'}${notFound.length ? ` · ${notFound.length} not found` : ''} · Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6mm 4mm;">${cells}</div>
+    </div>
+  `);
+});
+
+/* ============================================================
+   SUPABASE — shared multi-device database
+   ============================================================
+   Everything above this point still works the same way (same
+   local machines/spareParts/requisitions/partsHistory/requesters
+   arrays, same render functions). This section's job is just to
+   keep those arrays in sync with the shared database: load them
+   on startup, push each change up, and pull down changes other
+   devices make in real time.
+   ============================================================ */
+
+const SUPABASE_URL = 'https://dvnvvjkhfcyeblhaagyr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bnZ2amtoZmN5ZWJsaGFhZ3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1OTA1NTIsImV4cCI6MjEwMjE2NjU1Mn0.7ca3jgHwfYYGYmWdRuv0nKmUm4Gy_bC2fX9vPCUYU6c';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---------- row <-> local-object mapping ---------- */
+function rowToMachine(row){
+  return { sl:row.sl||'', type:row.type, trace:row.trace, date:row.date||'', brand:row.brand||'', model:row.model||'', serial:row.serial||'', status:row.status||'Active', remarks:row.remarks||'' };
+}
+function machineToRow(m){
+  return { trace:m.trace, sl:m.sl||null, type:m.type, date:m.date||null, brand:m.brand||null, model:m.model||null, serial:m.serial||null, status:m.status||'Active', remarks:m.remarks||'' };
+}
+function rowToSparePart(row, purchases){
+  return { sl:row.sl||'', type:row.type, ref:row.ref, item:row.item, partno:row.partno||'', handover:row.handover||0, purchases: purchases||[] };
+}
+function rowToRequisitionPart(row){
+  return { ref:row.ref, item:row.item, qty:row.qty, returnAvail:row.return_avail, requestedBy:row.requested_by, reason:row.reason||'' };
+}
+function rowToRequisition(row, parts){
+  return {
+    reqNo: row.req_no,
+    date: row.date,
+    machine: { trace: row.machine_trace, type: row.machine_type, brand: row.machine_brand, model: row.machine_model, serial: row.machine_serial },
+    parts: parts || [],
+    status: row.status,
+    checkerComment: row.checker_comment || '',
+    checkerDate: row.checker_date || '',
+    adminComment: row.admin_comment || '',
+    adminDate: row.admin_date || '',
+  };
+}
+function rowToPartsHistory(row){
+  return { trace:row.trace, type:row.type, brand:row.brand, model:row.model, serial:row.serial, item:row.item, ref:row.ref, qty:row.qty, reason:row.reason||'', requestedBy:row.requested_by, reqNo:row.req_no, date:row.date };
+}
+
+/* ---------- initial load: pull every table into the existing arrays ---------- */
+async function loadAllData(){
+  const [mRes, spRes, purRes, reqrRes, reqRes, rpRes, phRes] = await Promise.all([
+    sb.from('machines').select('*'),
+    sb.from('spare_parts').select('*'),
+    sb.from('spare_part_purchases').select('*').order('id', {ascending:true}),
+    sb.from('requesters').select('*').order('name', {ascending:true}),
+    sb.from('requisitions').select('*').order('date', {ascending:false}),
+    sb.from('requisition_parts').select('*'),
+    sb.from('parts_history').select('*').order('date', {ascending:false}),
+  ]);
+  const errs = [mRes,spRes,purRes,reqrRes,reqRes,rpRes,phRes].map(r=>r.error).filter(Boolean);
+  if(errs.length) throw errs[0];
+
+  const purByRef = {};
+  (purRes.data||[]).forEach(row=>{
+    (purByRef[row.ref] = purByRef[row.ref]||[]).push({id:row.id, date:row.date, qty:row.qty, note:row.note||''});
+  });
+  const partsByReq = {};
+  (rpRes.data||[]).forEach(row=>{
+    (partsByReq[row.req_no] = partsByReq[row.req_no]||[]).push(rowToRequisitionPart(row));
+  });
+
+  machines = (mRes.data||[]).sort((a,b)=>(a.sl||'').localeCompare(b.sl||'')).map(rowToMachine);
+  spareParts = (spRes.data||[]).sort((a,b)=>(a.sl||'').localeCompare(b.sl||'')).map(row=>rowToSparePart(row, purByRef[row.ref]));
+  requesters = (reqrRes.data||[]).map(r=>r.name);
+  requisitions = (reqRes.data||[]).map(row=>rowToRequisition(row, partsByReq[row.req_no]));
+  partsHistory = (phRes.data||[]).map(rowToPartsHistory);
+}
+
+/* ---------- writes: machines ---------- */
+async function dbAddMachine(m){
+  const { error } = await sb.from('machines').insert(machineToRow(m));
+  if(error) throw error;
+}
+async function dbAddMachines(list){
+  const { error } = await sb.from('machines').insert(list.map(machineToRow));
+  if(error) throw error;
+}
+async function dbDeleteMachine(trace){
+  const { error } = await sb.from('machines').delete().eq('trace', trace);
+  if(error) throw error;
+}
+async function dbUpdateMachineStatus(trace, status){
+  const { error } = await sb.from('machines').update({status}).eq('trace', trace);
+  if(error) throw error;
+}
+async function dbUpdateMachineRemarks(trace, remarks){
+  const { error } = await sb.from('machines').update({remarks}).eq('trace', trace);
+  if(error) throw error;
+}
+
+/* ---------- writes: spare parts ---------- */
+async function dbAddSparePart(part){
+  const { error: e1 } = await sb.from('spare_parts').insert({
+    ref:part.ref, sl:part.sl||null, type:part.type, item:part.item, partno:part.partno||'', handover:part.handover||0
+  });
+  if(e1) throw e1;
+  if(part.purchases && part.purchases.length){
+    const rows = part.purchases.map(p=>({ref:part.ref, date:p.date, qty:p.qty, note:p.note||''}));
+    const { data, error: e2 } = await sb.from('spare_part_purchases').insert(rows).select();
+    if(e2) throw e2;
+    part.purchases = (data||[]).map(r=>({id:r.id, date:r.date, qty:r.qty, note:r.note||''}));
+  }
+}
+async function dbAddSparePartsBulk(parts){
+  const { error: e1 } = await sb.from('spare_parts').insert(parts.map(part=>(
+    { ref:part.ref, sl:part.sl||null, type:part.type, item:part.item, partno:part.partno||'', handover:part.handover||0 }
+  )));
+  if(e1) throw e1;
+  const purchaseRows = [];
+  parts.forEach(part=>{
+    (part.purchases||[]).forEach(p=> purchaseRows.push({ref:part.ref, date:p.date, qty:p.qty, note:p.note||''}));
+  });
+  if(purchaseRows.length){
+    const { data, error: e2 } = await sb.from('spare_part_purchases').insert(purchaseRows).select();
+    if(e2) throw e2;
+    // reattach real DB ids, matching back up by ref in order
+    const byRef = {};
+    (data||[]).forEach(r=>{ (byRef[r.ref]=byRef[r.ref]||[]).push(r); });
+    parts.forEach(part=>{
+      if(part.purchases && part.purchases.length && byRef[part.ref]){
+        part.purchases = byRef[part.ref].map(r=>({id:r.id, date:r.date, qty:r.qty, note:r.note||''}));
+      }
+    });
+  }
+}
+async function dbDeleteSparePart(ref){
+  const { error } = await sb.from('spare_parts').delete().eq('ref', ref);
+  if(error) throw error;
+}
+async function dbUpdateHandover(ref, handover){
+  const { error } = await sb.from('spare_parts').update({handover}).eq('ref', ref);
+  if(error) throw error;
+}
+async function dbAddPurchase(ref, date, qty, note){
+  const { data, error } = await sb.from('spare_part_purchases').insert({ref,date,qty,note:note||''}).select().single();
+  if(error) throw error;
+  return { id:data.id, date:data.date, qty:data.qty, note:data.note||'' };
+}
+async function dbAddPurchasesBulk(rows){
+  const { data, error } = await sb.from('spare_part_purchases').insert(rows).select();
+  if(error) throw error;
+  return data;
+}
+async function dbDeletePurchase(id){
+  const { error } = await sb.from('spare_part_purchases').delete().eq('id', id);
+  if(error) throw error;
+}
+
+/* ---------- writes: requesters ---------- */
+async function dbAddRequester(name){
+  const { error } = await sb.from('requesters').insert({name});
+  if(error) throw error;
+}
+async function dbDeleteRequester(name){
+  const { error } = await sb.from('requesters').delete().eq('name', name);
+  if(error) throw error;
+}
+
+/* ---------- writes: requisitions ---------- */
+async function dbNextReqNo(){
+  // Reserved atomically in the database so two people submitting at the
+  // same instant never get the same requisition number.
+  const { data, error } = await sb.rpc('next_req_no');
+  if(error) throw error;
+  return data;
+}
+async function dbSubmitRequisition(reqNo, machine, parts){
+  const { error: e1 } = await sb.from('requisitions').insert({
+    req_no: reqNo, machine_trace: machine.trace, machine_type: machine.type,
+    machine_brand: machine.brand, machine_model: machine.model, machine_serial: machine.serial,
+    status: 'Pending'
+  });
+  if(e1) throw e1;
+  const rows = parts.map(p=>({req_no:reqNo, item:p.item, ref:p.ref, qty:p.qty, return_avail:p.returnAvail, requested_by:p.requestedBy, reason:p.reason||''}));
+  const { error: e2 } = await sb.from('requisition_parts').insert(rows);
+  if(e2) throw e2;
+}
+async function dbUpdateRequisition(reqNo, fields){
+  const { error } = await sb.from('requisitions').update(fields).eq('req_no', reqNo);
+  if(error) throw error;
+}
+async function dbIncrementHandover(ref, qty){
+  // Atomic — safe even if two approvals touching the same part land at once.
+  const { error } = await sb.rpc('increment_handover', { p_ref: ref, p_qty: qty });
+  if(error) throw error;
+}
+async function dbLogPartsHistory(rows){
+  const { error } = await sb.from('parts_history').insert(rows);
+  if(error) throw error;
+}
+
+/* ---------- realtime: pull in changes made from other devices ---------- */
+let syncDebounce = null;
+let realtimeStarted = false;
+function scheduleSync(){
+  clearTimeout(syncDebounce);
+  syncDebounce = setTimeout(async ()=>{
+    try{
+      await loadAllData();
+      rerenderEverything();
+      showSyncNote('Synced', false);
+    }catch(e){
+      console.error('Sync refresh failed', e);
+      showSyncNote('Sync error — will retry', true);
+    }
+  }, 500);
+}
+
+function rerenderEverything(){
+  try{ if(document.getElementById('machine-tbody')) renderTable(); }catch(e){}
+  try{ if(document.getElementById('spare-tbody')) renderSpareTable(); }catch(e){}
+  try{ if(typeof renderRequesters==='function') renderRequesters(); }catch(e){}
+  try{ if(typeof renderCheckerQueue==='function') renderCheckerQueue(); }catch(e){}
+  try{ if(typeof renderApprovals==='function') renderApprovals(); }catch(e){}
+  try{ if(typeof renderMachineHistory==='function') renderMachineHistory(); }catch(e){}
+  try{ updateApprovalsBadge(); }catch(e){}
+  try{ updateCheckerBadge(); }catch(e){}
+}
+
+function setupRealtime(){
+  if(realtimeStarted) return;
+  realtimeStarted = true;
+  sb.channel('sgwicus-sync')
+    .on('postgres_changes', {event:'*', schema:'public', table:'machines'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'spare_parts'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'spare_part_purchases'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'requesters'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'requisitions'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'requisition_parts'}, scheduleSync)
+    .on('postgres_changes', {event:'*', schema:'public', table:'parts_history'}, scheduleSync)
+    .subscribe();
+}
+
+let syncNoteTimer = null;
+function showSyncNote(text, isError){
+  const note = document.getElementById('db-sync-note');
+  if(!note) return;
+  document.getElementById('db-sync-text').textContent = text;
+  note.classList.toggle('saving', !!isError);
+  note.classList.remove('hidden');
+  clearTimeout(syncNoteTimer);
+  syncNoteTimer = setTimeout(()=> note.classList.add('hidden'), 2500);
+}
+
+/* ---------- boot ---------- */
+async function initApp(){
+  const overlay = document.getElementById('db-loading-overlay');
+  try{
+    await loadAllData();
+    setupRealtime();
+    overlay.classList.add('hidden');
+  }catch(err){
+    console.error('Initial load failed', err);
+    const box = overlay.querySelector('.db-loading-box');
+    box.innerHTML =
+      '<div class="db-loading-text" style="color:#F2A99A;">Could not connect to the database.</div>'
+      + '<div class="db-loading-sub" style="margin-top:10px;max-width:340px;">' + esc(err.message || String(err)) + '</div>'
+      + '<button id="db-retry-btn" class="btn amber" style="margin-top:16px;">Retry</button>';
+    document.getElementById('db-retry-btn').addEventListener('click', initApp);
+  }
+}
+initApp();
+
+</script>
+</body>
+</html>
