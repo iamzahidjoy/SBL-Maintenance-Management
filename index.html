@@ -1069,7 +1069,7 @@ tbody tr:hover{background:rgba(222,154,46,.06);}
       </div>
     </div>
     <p class="footer-strip">Dhaka Export Processing Zone · Internal Use Only</p>
-    <p class="footer-strip" style="margin-top:4px;opacity:.55;">Build V3.1 — Supabase-connected</p>
+    <p class="footer-strip" style="margin-top:4px;opacity:.55;">Build V3.2 — Supabase-connected</p>
   </div>
 </div>
 
@@ -3048,43 +3048,27 @@ function startScanner(){
   }
   html5Scanner = new Html5Qrcode('scan-region');
 
-  // Keep start() itself exactly to the library's documented, textbook
-  // pattern — the first argument only ever accepts a camera id string or a
-  // single-key { facingMode } / { deviceId } object; anything richer than
-  // that (width, height, advanced…) risks the same "exactly 1 key" failure
-  // regardless of which field it's tucked into. Resolution/focus tuning for
-  // small QR tags is applied afterwards via applyVideoConstraints() once the
-  // camera track is actually live — that's the library's documented,
-  // supported way to adjust an already-running camera.
+  // Deliberately plain, default configuration — a phone's own built-in
+  // camera app reads these printed tags fine at any distance, which means
+  // the tag and camera hardware are not the problem. Forcing a specific
+  // resolution/focus mode or the experimental native BarcodeDetector after
+  // start (an earlier version of this code did both) can make the live
+  // feed hunt for focus or decode worse than the browser's own defaults —
+  // so this sticks to the library's plain documented example, which is
+  // the best-tested path across devices.
   const config = {
     fps: 10,
     qrbox: (viewfinderWidth, viewfinderHeight)=>{
-      const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.92);
+      const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
       return { width: edge, height: edge };
     },
-    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
   };
   const onSuccess = (decodedText)=>acceptScannedTrace(decodedText);
   const onError = ()=>{}; // fires continuously while no QR is in frame — not a real error
 
-  // Best-effort only: if the browser/device rejects these, scanning still
-  // works fine at whatever resolution it already started at.
-  function boostResolutionForSmallTags(){
-    if(html5Scanner && typeof html5Scanner.applyVideoConstraints === 'function'){
-      try{
-        html5Scanner.applyVideoConstraints({
-          width: { ideal: 3840 },
-          height: { ideal: 2160 },
-          advanced: [{ focusMode: 'continuous' }]
-        }).catch(()=>{});
-      }catch(e){ /* ignore — best effort */ }
-    }
-  }
-
   html5Scanner.start({ facingMode: 'environment' }, config, onSuccess, onError)
     .then(()=>{
       document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
-      boostResolutionForSmallTags();
     })
     .catch(err=>{
       // 'environment' isn't guaranteed to exist/resolve on every device
@@ -3099,14 +3083,12 @@ function startScanner(){
         html5Scanner.start({ deviceId: { exact: camId } }, config, onSuccess, onError)
           .then(()=>{
             document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
-            boostResolutionForSmallTags();
           })
           .catch(()=>{
             // last resort — plain camera id, no fanciness at all
             html5Scanner.start(camId, config, onSuccess, onError)
               .then(()=>{
                 document.getElementById('scan-status').textContent = 'Point the camera at a machine QR tag — fill the box, hold steady.';
-                boostResolutionForSmallTags();
               })
               .catch(err3=>{
                 document.getElementById('scan-status').textContent =
