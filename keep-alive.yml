@@ -1,0 +1,19 @@
+name: Keep Supabase Awake
+
+on:
+  schedule:
+    # Runs every 3 days — comfortably inside Supabase's 7-day free-tier
+    # inactivity window, so the project never gets the chance to pause.
+    - cron: '0 3 */3 * *'
+  workflow_dispatch: # lets you also run it manually from the Actions tab, any time
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the SGWICUS Supabase database
+        run: |
+          curl -s -o /dev/null -w "Ping response: %{http_code}\n" \
+            "https://dvnvvjkhfcyeblhaagyr.supabase.co/rest/v1/machines?select=trace&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bnZ2amtoZmN5ZWJsaGFhZ3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1OTA1NTIsImV4cCI6MjEwMjE2NjU1Mn0.7ca3jgHwfYYGYmWdRuv0nKmUm4Gy_bC2fX9vPCUYU6c" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2bnZ2amtoZmN5ZWJsaGFhZ3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1OTA1NTIsImV4cCI6MjEwMjE2NjU1Mn0.7ca3jgHwfYYGYmWdRuv0nKmUm4Gy_bC2fX9vPCUYU6c"
